@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "notificationPrefs.reminders", "order": "ASCENDING" },
+        { "fieldPath": "notificationPrefs.timePreference", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

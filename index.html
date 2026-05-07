@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MindCheck" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <title>MindCheck</title>
+    <style>
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        background-color: #ece5de;
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Early error handler — catches errors BEFORE React loads
+      window.onerror = function(msg, url, line, col, error) {
+        console.error('MindCheck Early Error:', msg, url, line, col, error);
+        // Store in localStorage for the error logger to pick up
+        try {
+          var logs = JSON.parse(localStorage.getItem('mindcheck_error_logs') || '[]');
+          logs.unshift({
+            id: 'early-' + Date.now(),
+            timestamp: new Date().toISOString(),
+            type: 'js',
+            message: String(msg).substring(0, 500),
+            stack: (url ? url.split('/').pop() : '') + ':' + line + ':' + col,
+            appVersion: '1.9.0'
+          });
+          if (logs.length > 50) logs.length = 50;
+          localStorage.setItem('mindcheck_error_logs', JSON.stringify(logs));
+        } catch(e) {}
+
+        var root = document.getElementById('root');
+        if (root && !root.hasChildNodes()) {
+          var errText = String(msg);
+          var fileInfo = url ? url.split('/').pop() + ':' + line : '';
+          root.innerHTML = '<div style="padding:20px;font-family:sans-serif;color:#8d654c;background:#ece5de;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">'
+            + '<h2 style="font-size:18px;margin:0 0 8px;">MindCheck</h2>'
+            + '<p style="font-size:12px;opacity:0.6;margin:0 0 12px;">Screenshot this for developer</p>'
+            + '<div style="background:#fff;border:1px solid #ddc4af;border-radius:10px;padding:12px;width:100%;max-width:340px;word-break:break-all;font-size:11px;color:#c00;text-align:left;margin-bottom:12px;font-family:monospace;">'
+            + '<b>JS Error:</b><br>' + errText + '<br><br><b>File:</b> ' + fileInfo
+            + '</div>'
+            + '<button onclick="location.reload()" style="padding:12px 32px;background:#ffb757;color:#fff;border:none;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer;">Restart App</button>'
+            + '</div>';
+        }
+        return true;
+      };
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
