@@ -8,7 +8,9 @@
       "Bash(cp /d/Desktop/Mindcheck_mobile_v1.9.2_errorlogger/favicon/apple-touch-icon.png /d/Desktop/Mindcheck_mobile_v1.9.2_errorlogger/pwa/public/icons/apple-touch-icon.png)",
       "Bash(cp /d/Desktop/Mindcheck_mobile_v1.9.2_errorlogger/favicon/favicon.svg /d/Desktop/Mindcheck_mobile_v1.9.2_errorlogger/pwa/public/icons/icon.svg)",
       "Bash(BUILD_TARGET=pwa npm run *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

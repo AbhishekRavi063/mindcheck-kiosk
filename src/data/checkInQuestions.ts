@@ -159,70 +159,70 @@ export const rsesQuestions: Question[] = [
     id: 'rses-1',
     text: 'I feel that I am a person of worth, at least on an equal plane with others',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: false
   },
   {
     id: 'rses-2',
     text: 'I feel that I have a number of good qualities',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: false
   },
   {
     id: 'rses-3',
     text: 'All in all, I am inclined to feel that I am a failure',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: true // Reverse-scored
   },
   {
     id: 'rses-4',
     text: 'I am able to do things as well as most other people',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: false
   },
   {
     id: 'rses-5',
     text: 'I feel I do not have much to be proud of',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: true // Reverse-scored
   },
   {
     id: 'rses-6',
     text: 'I take a positive attitude toward myself',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: false
   },
   {
     id: 'rses-7',
     text: 'On the whole, I am satisfied with myself',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: false
   },
   {
     id: 'rses-8',
     text: 'I wish I could have more respect for myself',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: true // Reverse-scored
   },
   {
     id: 'rses-9',
     text: 'I certainly feel useless at times',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: true // Reverse-scored
   },
   {
     id: 'rses-10',
     text: 'At times I think I am no good at all',
     category: 'Self-Esteem',
-    options: ['Strongly agree', 'Agree', 'Disagree', 'Strongly disagree'],
+    options: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'],
     reverseScore: true // Reverse-scored
   }
 ];

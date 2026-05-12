@@ -111,7 +111,7 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
       const phq9Severity  = (s: number) => s <= 4 ? 'Minimal' : s <= 9 ? 'Mild' : s <= 14 ? 'Moderate' : s <= 19 ? 'Moderately severe' : 'Severe';
       const gad7Severity  = (s: number) => s <= 4 ? 'Minimal' : s <= 9 ? 'Mild' : s <= 14 ? 'Moderate' : 'Severe';
       const pssSeverity   = (s: number) => s <= 13 ? 'Low stress' : s <= 26 ? 'Moderate stress' : 'High stress';
-      const rsesSeverity  = (s: number) => s < 15 ? 'Low self-esteem' : s <= 25 ? 'Average self-esteem' : 'Strong self-esteem';
+      const rsesSeverity  = (s: number) => s <= 15 ? 'Low self-esteem' : s <= 25 ? 'Average self-esteem' : 'High self-esteem';
       const fiLabel       = (v: number | null | undefined): string | null => {
         if (v == null) return null;
         return (['Not difficult at all', 'Somewhat difficult', 'Very difficult', 'Extremely difficult'][v]) ?? String(v);
@@ -237,7 +237,7 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
             if (r.phq9Score != null) lines.push(`   PHQ-9 (Mood):        ${r.phq9Score}/27 — ${phq9Severity(r.phq9Score)}`);
             if (r.gad7Score != null) lines.push(`   GAD-7 (Anxiety):     ${r.gad7Score}/21 — ${gad7Severity(r.gad7Score)}`);
             if (r.pssScore  != null) lines.push(`   PSS (Stress):        ${r.pssScore}/40 — ${pssSeverity(r.pssScore)}`);
-            if (r.rsesScore != null) lines.push(`   RSES (Self-esteem):  ${r.rsesScore}/40 — ${rsesSeverity(r.rsesScore)}`);
+            if (r.rsesScore != null) lines.push(`   RSES (Self-esteem):  ${r.rsesScore}/30 — ${rsesSeverity(r.rsesScore)}`);
             const fi = fiLabel(r.functionalImpairment);
             if (fi) lines.push(`   Functional impact:   ${fi}`);
           });

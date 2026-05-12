@@ -26,7 +26,7 @@ function severityLabel(type: 'phq9' | 'gad7' | 'pss' | 'rses', score: number): s
       if (score <= 26) return 'moderate';
       return 'high';
     case 'rses':
-      if (score < 15)  return 'low';
+      if (score <= 15) return 'low';
       if (score <= 25) return 'normal';
       return 'high';
   }

@@ -7,6 +7,7 @@ import { GameMetrics as MemoryMetrics } from '../games/MemoryGame';
 import { GameMetrics as CountingMetrics } from '../games/CountingGame';
 import { saveQuestionnaireResponse, saveGameMetrics, saveJournalEntry } from '../../utils/dataSync';
 import { calculatePssScore } from '../../utils/pssScore';
+import { calculateRsesScore } from '../../utils/rsesScore';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
 import { DataSyncPreferenceModal } from '../modals/DataSyncPreferenceModal';
 
@@ -48,28 +49,7 @@ export function CompletionSummary({
   const pssScore = calculatePssScore(pssAnswers);
   const gad7Score = gad7Answers.reduce((a, b) => a + b, 0);
   
-  // Calculate RSES score with reverse scoring
-  const rsesScore = rsesAnswers.reduce((total, answer, index) => {
-    const rsesQuestions = [
-      { reverseScore: false }, // Q1
-      { reverseScore: false }, // Q2
-      { reverseScore: true },  // Q3
-      { reverseScore: false }, // Q4
-      { reverseScore: true },  // Q5
-      { reverseScore: false }, // Q6
-      { reverseScore: false }, // Q7
-      { reverseScore: true },  // Q8
-      { reverseScore: true },  // Q9
-      { reverseScore: true },  // Q10
-    ];
-    
-    const question = rsesQuestions[index];
-    if (!question) return total;
-    
-    // Reverse score if needed: 0→3, 1→2, 2→1, 3→0 becomes 1→4, 2→3, 3→2, 4→1
-    const score = question.reverseScore ? (3 - answer) + 1 : answer + 1;
-    return total + score;
-  }, 0);
+  const rsesScore = calculateRsesScore(rsesAnswers);
 
   useEffect(() => {
     // Save the assessment data to history
@@ -223,9 +203,9 @@ export function CompletionSummary({
   };
 
   const getRsesRange = (score: number) => {
-    if (score < 15) return { level: 'Lower self-esteem', color: 'text-orange-600', bg: 'bg-orange-50' };
+    if (score <= 15) return { level: 'Lower self-esteem', color: 'text-orange-600', bg: 'bg-orange-50' };
     if (score <= 25) return { level: 'Average self-esteem', color: 'text-green-600', bg: 'bg-green-50' };
-    return { level: 'Strong self-esteem', color: 'text-blue-600', bg: 'bg-blue-50' };
+    return { level: 'High self-esteem', color: 'text-blue-600', bg: 'bg-blue-50' };
   };
 
   const getGad7Range = (score: number) => {
