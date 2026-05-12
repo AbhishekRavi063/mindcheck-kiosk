@@ -6,6 +6,7 @@ import { GameMetrics as AttentionMetrics } from '../games/AttentionGame';
 import { GameMetrics as MemoryMetrics } from '../games/MemoryGame';
 import { GameMetrics as CountingMetrics } from '../games/CountingGame';
 import { saveQuestionnaireResponse, saveGameMetrics, saveJournalEntry } from '../../utils/dataSync';
+import { calculatePssScore } from '../../utils/pssScore';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
 import { DataSyncPreferenceModal } from '../modals/DataSyncPreferenceModal';
 
@@ -44,7 +45,7 @@ export function CompletionSummary({
   const hasShownModal = useRef(false);
   
   const phq9Score = phq9Answers.reduce((a, b) => a + b, 0);
-  const pssScore = pssAnswers.reduce((a, b) => a + b, 0);
+  const pssScore = calculatePssScore(pssAnswers);
   const gad7Score = gad7Answers.reduce((a, b) => a + b, 0);
   
   // Calculate RSES score with reverse scoring
