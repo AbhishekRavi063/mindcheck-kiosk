@@ -19,17 +19,18 @@ export function RSESIllustration({
 
   // Animation logic:
   // - Animations show: LOW percentage (0) = negative visuals, HIGH percentage (1) = positive visuals
-  // 
+  // - Options order: ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree'] → SD=0, SA=3
+  //
   // For NON-reversed questions (e.g., "I feel I'm a person of worth"):
-  //   - Strongly agree (slider=0) = HIGH self-esteem → needs HIGH visual (1)
-  //   - Strongly disagree (slider=1) = LOW self-esteem → needs LOW visual (0)
-  //   - Formula: visualPercentage = 1 - sliderPercentage
-  // 
-  // For REVERSED questions (e.g., "I feel like a failure"):
-  //   - Strongly agree (slider=0) = LOW self-esteem → needs LOW visual (0)
-  //   - Strongly disagree (slider=1) = HIGH self-esteem → needs HIGH visual (1)
+  //   - Strongly disagree (slider=0) = LOW self-esteem → needs LOW visual (0)
+  //   - Strongly agree (slider=1) = HIGH self-esteem → needs HIGH visual (1)
   //   - Formula: visualPercentage = sliderPercentage (no inversion)
-  const visualPercentage = isReversed ? sliderPercentage : (1 - sliderPercentage);
+  //
+  // For REVERSED questions (e.g., "I feel like a failure"):
+  //   - Strongly disagree (slider=0) = HIGH self-esteem → needs HIGH visual (1)
+  //   - Strongly agree (slider=1) = LOW self-esteem → needs LOW visual (0)
+  //   - Formula: visualPercentage = 1 - sliderPercentage
+  const visualPercentage = isReversed ? (1 - sliderPercentage) : sliderPercentage;
   
   switch (questionNumber) {
     case 1: // Person of worth - equal with others
