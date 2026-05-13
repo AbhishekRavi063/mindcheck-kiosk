@@ -181,19 +181,13 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
     setIsDragging(false);
   };
 
-  const isRSES = question.id?.startsWith('rses-');
-
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
     handleSliderInteraction(e.touches[0].clientX);
-    e.preventDefault();
-    if (isRSES) e.stopPropagation();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     handleSliderInteraction(e.touches[0].clientX);
-    e.preventDefault();
-    if (isRSES) e.stopPropagation();
   };
 
   const handleTouchEnd = () => {
@@ -356,7 +350,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                 className="relative h-4 rounded-full cursor-pointer mx-4"
                 style={{
                   background: 'linear-gradient(to right, #ffb757 0%, #ddc4af 50%, #8d654c 100%)',
-                  ...(isRSES ? { touchAction: 'none' } : {})
+                  touchAction: 'none'
                 }}
               >
                 {/* Slider thumb */}
