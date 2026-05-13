@@ -78,11 +78,10 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
 
       return () => clearTimeout(timer);
     } else {
-      // All digits shown, move to input phase
       setTimeout(() => {
         setPhase('input');
         recallStartTime.current = Date.now();
-      }, 500);
+      }, 1000);
     }
   }, [phase, currentDigitIndex, digitSequence]);
 
