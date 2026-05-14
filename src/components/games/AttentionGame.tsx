@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Grid3x3, CheckCircle2, X } from 'lucide-react';
+import { Grid3x3, CheckCircle2, X, ArrowLeft } from 'lucide-react';
 import { BackButton } from '../ui/BackButton';
 
 interface AttentionGameProps {
@@ -298,9 +298,19 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
       <div className="p-6 pb-4">
         <div className="max-w-[390px] mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
-              Spatial Span Game
-            </h2>
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className={`w-9 h-9 ${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/60'} rounded-full flex items-center justify-center active:scale-95 transition-transform`}
+                >
+                  <ArrowLeft className={`w-4 h-4 ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`} />
+                </button>
+              )}
+              <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
+                Spatial Span Game
+              </h2>
+            </div>
             <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
               {currentTrial + 1} / {MAX_TRIALS}
             </div>

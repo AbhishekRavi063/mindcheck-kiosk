@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calculator, CheckCircle2 } from 'lucide-react';
+import { Calculator, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { BackButton } from '../ui/BackButton';
 
 interface CountingGameProps {
@@ -254,9 +254,19 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
       <div className="p-6 pb-4">
         <div className="max-w-[390px] mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
-              Count Backward
-            </h2>
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className={`w-9 h-9 ${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/60'} rounded-full flex items-center justify-center active:scale-95 transition-transform`}
+                >
+                  <ArrowLeft className={`w-4 h-4 ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`} />
+                </button>
+              )}
+              <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
+                Count Backward
+              </h2>
+            </div>
             <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
               {currentStep + 1} / {totalSteps}
             </div>

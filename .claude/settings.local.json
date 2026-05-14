@@ -10,7 +10,8 @@
       "Bash(BUILD_TARGET=pwa npm run *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

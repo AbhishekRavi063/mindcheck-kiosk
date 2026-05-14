@@ -67,6 +67,7 @@
     "build": "cross-env BUILD_TARGET=pwa vite build",
     "build:pwa": "cross-env BUILD_TARGET=pwa vite build && node -e \"const fs=require('fs');fs.mkdirSync('dist/.vercel',{recursive:true});fs.writeFileSync('dist/.vercel/project.json',JSON.stringify({projectId:'prj_KWPh3eKQ9jnFiRxpKpTemnyd1wOx',orgId:'team_lDTCE7TrMS7hwzb502HVTe22',projectName:'mindcheck-pwa'}))\"",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy": "npm run build:pwa && node scripts/prep-vercel-output.js && vercel deploy --prebuilt --prod"
   }
 }
