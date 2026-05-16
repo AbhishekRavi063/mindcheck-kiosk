@@ -125,7 +125,7 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
         switch (g.type) {
           case 'gonogo':    return `hits:${g.hits??'-'} misses:${g.misses??'-'} falseAlarms:${g.falseAlarms??'-'} correctRejections:${g.correctRejections??'-'} inhibitionScore:${g.inhibitionScore??'-'}% avgRT:${g.averageReactionTime??'-'}ms`;
           case 'attention': return `correctSequences:${g.correctSequences??'-'} longestSequence:${g.longestSequence??'-'} avgSpan:${g.averageSpan??'-'} accuracy:${g.accuracy??'-'}% avgRT:${g.averageReactionTime??'-'}ms`;
-          case 'memory':    return `correctRecalls:${g.correctRecalls??'-'} avgDigitSpan:${g.averageDigitSpan??'-'} longestSpan:${g.longestSpan??'-'} accuracy:${g.accuracy??'-'}% avgRT:${g.averageReactionTime??'-'}ms`;
+          case 'memory':    return `correctRecalls:${g.correctRecalls??'-'} longestSpan:${g.longestSpan??'-'} accuracy:${g.accuracy??'-'}% avgRT:${g.averageReactionTime??'-'}ms`;
           case 'counting':  return `correctSteps:${g.correctSteps??'-'} incorrectSteps:${g.incorrectSteps??'-'} accuracy:${g.accuracy??'-'}% avgRT:${g.averageReactionTime??'-'}ms totalTime:${g.totalTime??'-'}s`;
           default:          return `accuracy:${g.accuracy??'-'}%`;
         }
@@ -143,7 +143,7 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
             `   Accuracy: ${g.accuracy??'-'}%  Avg Reaction Time: ${g.averageReactionTime??'-'}ms`,
           ];
           case 'memory':    return [
-            `   Correct Recalls: ${g.correctRecalls??'-'}  Avg Digit Span: ${g.averageDigitSpan??'-'}  Longest Span: ${g.longestSpan??'-'}`,
+            `   Correct Recalls: ${g.correctRecalls??'-'}  Longest Span: ${g.longestSpan??'-'}`,
             `   Accuracy: ${g.accuracy??'-'}%  Avg Reaction Time: ${g.averageReactionTime??'-'}ms`,
           ];
           case 'counting':  return [

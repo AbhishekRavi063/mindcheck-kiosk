@@ -22,8 +22,8 @@ export interface GameMetrics {
 const GRID_SIZE = 4; // 4x4 grid
 const STARTING_SEQUENCE_LENGTH = 2;
 const MAX_SEQUENCE_LENGTH = 9;
-const FLASH_DURATION = 600; // ms
-const FLASH_INTERVAL = 400; // ms between flashes
+const FLASH_DURATION = 500; // ms
+const FLASH_INTERVAL = 250; // ms between flashes
 const MAX_TRIALS = 10; // Total number of trials
 
 export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }: AttentionGameProps) {
@@ -34,31 +34,56 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
   const [userSequence, setUserSequence] = useState<number[]>([]);
   const [flashingIndex, setFlashingIndex] = useState<number | null>(null);
   const [gamePhase, setGamePhase] = useState<'showing' | 'input' | 'feedback'>('showing');
-  const [correctTrials, setCorrectTrials] = useState(0);
+  const [correctSequences, setCorrectSequences] = useState(0);
   const [longestSequence, setLongestSequence] = useState(0);
   const [allSpans, setAllSpans] = useState<number[]>([]);
   const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  const [reactionTimes, setReactionTimes] = useState<number[]>([]);
   const inputStartTimeRef = useRef<number | null>(null);
+  const sequenceLengthRef = useRef(STARTING_SEQUENCE_LENGTH);
+  const correctSequencesRef = useRef(0);
+  const currentTrialRef = useRef(0);
+  const longestSequenceRef = useRef(0);
+  const reactionTimesRef = useRef<number[]>([]);
+  const trialsAtCurrentLength = useRef(0);
+  const correctAtCurrentLength = useRef(0);
 
   // Generate a new random sequence
   const generateSequence = (length: number): number[] => {
+    const isAdjacent = (a: number, b: number): boolean => {
+      const diff = Math.abs(a - b);
+      if (diff === 1) {
+        return Math.floor(a / GRID_SIZE) === Math.floor(b / GRID_SIZE);
+      }
+      return diff === GRID_SIZE;
+    };
+
     const seq: number[] = [];
-    for (let i = 0; i < length; i++) {
-      let randomIndex;
-      // Ensure no consecutive duplicates
-      do {
-        randomIndex = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
-      } while (seq.length > 0 && seq[seq.length - 1] === randomIndex);
+    let attempts = 0;
+
+    while (seq.length < length && attempts < 1000) {
+      attempts++;
+      const randomIndex = Math.floor(
+        Math.random() * (GRID_SIZE * GRID_SIZE)
+      );
+
+      // reject if already used anywhere in the sequence
+      if (seq.includes(randomIndex)) continue;
+
+      // reject if adjacent to immediately previous cell
+      if (
+        seq.length > 0 &&
+        isAdjacent(seq[seq.length - 1], randomIndex)
+      ) continue;
+
       seq.push(randomIndex);
     }
+
     return seq;
   };
 
   // Start a new trial
-  const startNewTrial = () => {
-    const newSequence = generateSequence(sequenceLength);
+  const startNextTrial = () => {
+    const newSequence = generateSequence(sequenceLengthRef.current);
     setSequence(newSequence);
     setUserSequence([]);
     setGamePhase('showing');
@@ -97,6 +122,30 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
     return () => clearTimeout(timer);
   }, [gamePhase, sequence]);
 
+  const endGame = () => {
+    const finalLongest = longestSequenceRef.current;
+    const finalCorrect = correctSequencesRef.current;
+    const finalTotal = currentTrialRef.current + 1;
+    const finalRTs = reactionTimesRef.current;
+
+    const avgRT = finalRTs.length > 0
+      ? Math.round(finalRTs.reduce((a, b) => a + b, 0) / finalRTs.length)
+      : 0;
+
+    const metrics: GameMetrics = {
+      totalTrials: finalTotal,
+      correctSequences: finalCorrect,
+      longestSequence: finalLongest,
+      averageSpan: finalLongest,
+      accuracy: Math.round((finalCorrect / finalTotal) * 100),
+      averageReactionTime: avgRT,
+    };
+
+    setTimeout(() => {
+      onComplete(metrics);
+    }, 500);
+  };
+
   // Handle cell click during input phase
   const handleCellClick = (index: number) => {
     if (gamePhase !== 'input') return;
@@ -106,65 +155,61 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
 
     // Check if user completed the sequence
     if (newUserSequence.length === sequence.length) {
-      // Calculate reaction time (total time to complete the sequence)
-      if (inputStartTimeRef.current !== null) {
-        const reactionTime = Math.round(performance.now() - inputStartTimeRef.current);
-        setReactionTimes(prev => [...prev, reactionTime]);
-      }
+      const isCorrect = newUserSequence.every((cell, i) => cell === sequence[i]);
 
-      // Check if correct
-      const isCorrect = newUserSequence.every((val, idx) => val === sequence[idx]);
+      // record reaction time using ref
+      const reactionTime = performance.now() - (inputStartTimeRef.current ?? 0);
+      reactionTimesRef.current.push(reactionTime);
+
+      // update trial counters
+      currentTrialRef.current += 1;
+      setCurrentTrial(prev => prev + 1);
+
+      trialsAtCurrentLength.current += 1;
+
+      if (isCorrect) {
+        correctAtCurrentLength.current += 1;
+        correctSequencesRef.current += 1;
+        setCorrectSequences(prev => prev + 1);
+      }
 
       // Delay phase change to keep last square orange
       setTimeout(() => {
         setGamePhase('feedback');
         setFeedbackType(isCorrect ? 'correct' : 'incorrect');
 
-        if (isCorrect) {
-          setCorrectTrials(prev => prev + 1);
-          setAllSpans(prev => [...prev, sequenceLength]);
+        // after 3 trials at this length, decide advance or stop
+        if (trialsAtCurrentLength.current === 3) {
+          const correct = correctAtCurrentLength.current;
 
-          if (sequenceLength > longestSequence) {
-            setLongestSequence(sequenceLength);
-          }
+          // reset per-length counters
+          trialsAtCurrentLength.current = 0;
+          correctAtCurrentLength.current = 0;
 
-          // Increase difficulty for next trial
-          if (sequenceLength < MAX_SEQUENCE_LENGTH) {
-            setSequenceLength(prev => prev + 1);
-          }
-        } else {
-          setAllSpans(prev => [...prev, sequenceLength - 1]); // They failed at this level
-        }
-
-        // Move to next trial after feedback
-        setTimeout(() => {
-          const nextTrial = currentTrial + 1;
-          setCurrentTrial(nextTrial);
-
-          if (nextTrial >= MAX_TRIALS) {
-            // Game complete
-            const finalReactionTimes = inputStartTimeRef.current !== null
-              ? [...reactionTimes, Math.round(performance.now() - inputStartTimeRef.current)]
-              : reactionTimes;
-
-            const metrics: GameMetrics = {
-              totalTrials: MAX_TRIALS,
-              correctSequences: correctTrials + (isCorrect ? 1 : 0),
-              longestSequence: isCorrect && sequenceLength > longestSequence ? sequenceLength : longestSequence,
-              averageSpan: allSpans.length > 0
-                ? parseFloat(([...allSpans, isCorrect ? sequenceLength : sequenceLength - 1].reduce((a, b) => a + b, 0) / (allSpans.length + 1)).toFixed(1))
-                : sequenceLength - 1,
-              accuracy: Math.round(((correctTrials + (isCorrect ? 1 : 0)) / MAX_TRIALS) * 100),
-              averageReactionTime: finalReactionTimes.length > 0
-                ? Math.round(finalReactionTimes.reduce((a, b) => a + b, 0) / finalReactionTimes.length)
-                : 0
-            };
-            setIsComplete(true);
-            setTimeout(() => onComplete(metrics), 2000);
+          if (correct >= 2) {
+            // update longest span — length is confirmed passed
+            if (sequenceLengthRef.current > longestSequenceRef.current) {
+              longestSequenceRef.current = sequenceLengthRef.current;
+              setLongestSequence(sequenceLengthRef.current);
+            }
+            // advance
+            if (sequenceLengthRef.current < MAX_SEQUENCE_LENGTH) {
+              sequenceLengthRef.current += 1;
+              setSequenceLength(prev => prev + 1);
+              setTimeout(() => startNextTrial(), 1500);
+            } else {
+              // ceiling — end game
+              setTimeout(() => endGame(), 1500);
+            }
           } else {
-            startNewTrial();
+            // 0 or 1 correct out of 3 — stop
+            setTimeout(() => endGame(), 1500);
           }
-        }, 1500);
+
+        } else {
+          // fewer than 3 trials at this length — continue
+          setTimeout(() => startNextTrial(), 1500);
+        }
       }, 300); // 300ms delay to keep last square orange
     }
   };
@@ -172,31 +217,10 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
   // Start first trial when game begins
   useEffect(() => {
     if (gameStarted && currentTrial === 0) {
-      startNewTrial();
+      startNextTrial();
     }
   }, [gameStarted]);
 
-  if (isComplete) {
-    return (
-      <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex items-center justify-center p-6`}>
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <div className="w-20 h-20 bg-[#ffb757] rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-10 h-10 text-white" />
-          </div>
-          <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
-            Great memory! 🧠
-          </h2>
-          <p className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'} mt-2`}>
-            Longest sequence: {longestSequence}
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
 
   // Instruction screen
   if (!gameStarted) {
@@ -293,7 +317,7 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col`}>
+    <div className={`${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col`} style={{ minHeight: '100dvh' }}>
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="max-w-[390px] mx-auto">
@@ -312,14 +336,14 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
               </h2>
             </div>
             <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
-              {currentTrial + 1} / {MAX_TRIALS}
+              Trial {currentTrial + 1}
             </div>
           </div>
           <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-[#ffb757]"
               initial={{ width: 0 }}
-              animate={{ width: `${((currentTrial + 1) / MAX_TRIALS) * 100}%` }}
+              animate={{ width: `${Math.min((currentTrial + 1) * 8, 95)}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
@@ -329,62 +353,40 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
       {/* Status Message */}
       <div className="px-6 pb-4">
         <div className="max-w-[390px] mx-auto">
-          <AnimatePresence mode="wait">
+          <div className={`w-full h-[116px] overflow-hidden flex flex-col items-center justify-center rounded-2xl p-4 text-sm text-center transition-colors duration-200 ${
+            gamePhase === 'feedback'
+              ? feedbackType === 'correct'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+              : isDarkMode
+                ? 'bg-[#2a2218] text-[#ece5de]/80'
+                : 'bg-white/60 text-[#8d654c]/80'
+          }`}>
             {gamePhase === 'showing' && (
-              <motion.div
-                key="watching"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/60'} rounded-2xl p-4 text-sm ${isDarkMode ? 'text-[#ece5de]/80' : 'text-[#8d654c]/80'} text-center`}
-              >
-                <Grid3x3 className="w-6 h-6 text-[#ffb757] mx-auto mb-2" />
+              <>
+                <Grid3x3 className="w-6 h-6 text-[#ffb757] mb-2" />
                 <p><strong>Watch carefully!</strong> Remember the sequence...</p>
-              </motion.div>
+              </>
             )}
-
             {gamePhase === 'input' && (
-              <motion.div
-                key="input"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/60'} rounded-2xl p-4 text-sm ${isDarkMode ? 'text-[#ece5de]/80' : 'text-[#8d654c]/80'} text-center`}
-              >
+              <>
+                <Grid3x3 className="w-6 h-6 text-[#ffb757] mb-2 opacity-0" />
                 <p><strong>Your turn!</strong> Tap the squares in order ({userSequence.length}/{sequence.length})</p>
-              </motion.div>
+              </>
             )}
-
             {gamePhase === 'feedback' && (
-              <motion.div
-                key="feedback"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`${
-                  feedbackType === 'correct'
-                    ? 'bg-green-100 dark:bg-green-900/30'
-                    : 'bg-red-100 dark:bg-red-900/30'
-                } rounded-2xl p-4 text-sm ${
-                  feedbackType === 'correct'
-                    ? 'text-green-800 dark:text-green-200'
-                    : 'text-red-800 dark:text-red-200'
-                } text-center`}
-              >
-                {feedbackType === 'correct' ? (
-                  <>
-                    <CheckCircle2 className="w-6 h-6 mx-auto mb-2" />
-                    <p><strong>Perfect!</strong> Sequence length: {sequence.length}</p>
-                  </>
-                ) : (
-                  <>
-                    <X className="w-6 h-6 mx-auto mb-2" />
-                    <p><strong>Not quite!</strong> Let's try the next one</p>
-                  </>
-                )}
-              </motion.div>
+              <>
+                {feedbackType === 'correct'
+                  ? <CheckCircle2 className="w-6 h-6 mb-2" />
+                  : <X className="w-6 h-6 mb-2" />
+                }
+                {feedbackType === 'correct'
+                  ? <p><strong>Perfect!</strong> Sequence length: {sequence.length}</p>
+                  : <p><strong>Not quite!</strong> Let's try the next one</p>
+                }
+              </>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -404,17 +406,13 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
                   disabled={gamePhase !== 'input'}
                   className={`aspect-square rounded-2xl transition-all ${
                     isFlashing
-                      ? 'bg-[#ffb757] shadow-xl scale-105'
+                      ? 'bg-[#ffb757] shadow-xl'
                       : shouldShowUserClick
                       ? 'bg-[#ffb757] shadow-lg'
                       : isDarkMode
                       ? 'bg-[#2a2218]'
                       : 'bg-white/40'
                   } ${gamePhase === 'input' ? 'active:scale-90 cursor-pointer' : 'cursor-default'}`}
-                  animate={{
-                    scale: isFlashing ? 1.05 : 1,
-                  }}
-                  transition={{ duration: 0.2 }}
                 >
                   <AnimatePresence>
                     {shouldShowUserClick && (
@@ -434,8 +432,10 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
           </div>
 
           {/* Sequence indicator during input */}
-          {gamePhase === 'input' && (
-            <div className="mt-6 flex justify-center gap-2">
+          <div className={`h-10 flex items-center justify-center transition-opacity duration-150 ${
+            gamePhase === 'input' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}>
+            <div className="flex justify-center gap-2">
               {sequence.map((_, idx) => (
                 <div
                   key={idx}
@@ -449,7 +449,7 @@ export function AttentionGame({ onComplete, isDarkMode = false, onBack, onSkip }
                 />
               ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

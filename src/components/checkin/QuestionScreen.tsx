@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { motion, useSpring } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import type { Question } from '../../data/checkInQuestions';
@@ -24,11 +24,20 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   const [isDragging, setIsDragging] = useState(false);
   const [supportiveQuote] = useState(getQuoteForQuestion(question.text));
   const sliderRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  // Reset slider to leftmost position when question changes
-  useEffect(() => {
+  // Prevent window scroll while this screen is active
+  useLayoutEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  // Reset slider and scroll position when question changes (before paint)
+  useLayoutEffect(() => {
     setValue(0);
-    setHasInteracted(true); // Keep button active when question changes
+    setHasInteracted(true);
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [question.id]);
 
   // Use spring animation for smoother movement
@@ -219,9 +228,9 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   const sliderPosition = (value / maxValue) * 100;
 
   return (
-    <div className={`h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col overflow-hidden`}>
-      {/* Header - Minimal spacing */}
-      <div className="px-5 pt-3 pb-1.5 flex-shrink-0">
+    <div className={`fixed inset-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col overflow-hidden`}>
+      {/* Header */}
+      <div className={`px-5 pt-3 pb-1.5 flex-shrink-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'}`}>
         <div className="flex items-center justify-between mb-1.5">
           <button
             onClick={onBack}
@@ -250,8 +259,8 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
         </div>
       </div>
 
-      {/* Main Content - Scrollable with proper bottom padding */}
-      <div className="flex-1 overflow-y-auto px-5 pb-24">
+      {/* Main Content - Scrollable, vertical only */}
+      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-2 pb-24" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
         <div className="flex flex-col">
           <div className="flex-shrink-0">
             {/* Timeframe */}
@@ -269,7 +278,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.1 }}
-              className={`text-[18px] font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-4 leading-snug`}
+              className={`text-[18px] font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-2 leading-snug`}
             >
               {question.text}
             </motion.h2>
@@ -279,7 +288,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.2 }}
-              className="flex justify-center items-center mb-4 h-36 flex-shrink-0"
+              className="flex justify-center items-center mb-3 h-36 flex-shrink-0 overflow-hidden"
             >
               {question.id?.startsWith('phq9-') && questionNumber ? (
                 <SemanticIllustration 
@@ -323,14 +332,14 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.3 }}
-              className="mb-3"
+              className="mb-1"
             >
               {/* Helper text */}
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className={`text-center text-sm ${isDarkMode ? 'text-[#ece5de]/50' : 'text-[#8d654c]/50'} mb-3`}
+                className={`text-center text-sm ${isDarkMode ? 'text-[#ece5de]/50' : 'text-[#8d654c]/50'} mb-2`}
               >
                 Slide to select
               </motion.p>
@@ -398,7 +407,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                         left: `${optionPosition}%`,
                         transform: 'translateX(-50%)',
                         width: 'max-content',
-                        maxWidth: '80px'
+                        maxWidth: `${Math.floor(96 / maxValue)}%`
                       }}
                     >
                       {/* Indicator dot */}
@@ -437,27 +446,12 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               </div>
             </motion.div>
 
-            {/* Supportive Quote - Part of interaction group */}
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className={`text-center px-4 mb-4 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
-            >
-              <div className={`text-[14px] font-medium leading-snug ${isDarkMode ? 'text-[#ffb757]/85' : 'text-[#8d654c]/85'}`}>
-                "{supportiveQuote.text}"
-              </div>
-              <div className={`text-[12px] mt-1 ${isDarkMode ? 'text-[#ddc4af]/70' : 'text-[#8d654c]/60'}`}>
-                — {supportiveQuote.author}
-              </div>
-            </motion.div>
-
-            {/* Continue Button - Directly after quote */}
+            {/* Continue Button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="pb-6 flex-shrink-0"
+              transition={{ delay: 0.6 }}
+              className="pb-4 flex-shrink-0"
             >
               <button
                 onClick={handleContinue}
@@ -470,6 +464,21 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               >
                 {hasInteracted ? 'Continue' : 'Please slide to select'}
               </button>
+            </motion.div>
+
+            {/* Supportive Quote - Below continue button */}
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className={`text-center px-4 mb-4 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
+            >
+              <div className={`text-[14px] font-medium leading-snug ${isDarkMode ? 'text-[#ffb757]/85' : 'text-[#8d654c]/85'}`}>
+                "{supportiveQuote.text}"
+              </div>
+              <div className={`text-[12px] mt-1 ${isDarkMode ? 'text-[#ddc4af]/70' : 'text-[#8d654c]/60'}`}>
+                — {supportiveQuote.author}
+              </div>
             </motion.div>
           </div>
 

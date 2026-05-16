@@ -116,7 +116,7 @@ export function GameScoreScreen({ gameType, metrics, onContinue, isDarkMode = fa
           primaryUnit: '%',
           stats: [
             { label: 'Correct Recalls', value: memoryMetrics.correctRecalls, icon: Target },
-            { label: 'Max Sequence', value: memoryMetrics.longestSpan, icon: Star },
+            { label: 'Longest Span', value: memoryMetrics.longestSpan, icon: Star },
             { label: 'Avg Time', value: `${memoryMetrics.averageReactionTime}ms`, icon: Zap }
           ],
           message: memoryMetrics.accuracy >= 80

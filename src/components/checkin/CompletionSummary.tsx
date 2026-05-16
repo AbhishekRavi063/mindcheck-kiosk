@@ -479,7 +479,7 @@ export function CompletionSummary({
               </div>
 
               <p className={`text-xs ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'} mt-3`}>
-                Avg Time: {memoryMetrics.averageReactionTime}ms • Avg span: {memoryMetrics.averageDigitSpan}
+                Avg Time: {memoryMetrics.averageReactionTime}ms • Longest span: {memoryMetrics.longestSpan}
               </p>
             </div>
           )}
