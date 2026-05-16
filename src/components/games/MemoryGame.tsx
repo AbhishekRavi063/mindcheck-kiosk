@@ -43,11 +43,22 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
   const trialInLength = useRef<1 | 2>(1);
   const currentLengthHadCorrect = useRef<boolean>(false);
 
-  // Generate a random digit sequence (1-9, no repeats)
   const generateSequence = (length: number): number[] => {
+    const hasConsecutiveRun = (seq: number[]): boolean => {
+      for (let i = 0; i < seq.length - 2; i++) {
+        const d1 = seq[i + 1] - seq[i];
+        const d2 = seq[i + 2] - seq[i + 1];
+        if ((d1 === 1 && d2 === 1) || (d1 === -1 && d2 === -1)) return true;
+      }
+      return false;
+    };
+
     const digits = [1,2,3,4,5,6,7,8,9];
-    const shuffled = digits.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, length);
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const candidate = [...digits].sort(() => Math.random() - 0.5).slice(0, length);
+      if (!hasConsecutiveRun(candidate)) return candidate;
+    }
+    return [...digits].sort(() => Math.random() - 0.5).slice(0, length);
   };
 
   // Start a new trial
@@ -117,16 +128,38 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
       setAllSpans(prev => [...prev, digitCount]);
       if (digitCount > longestSpan) setLongestSpan(digitCount);
 
-      // pass — advance length, reset trial-in-length tracking
-      setDigitCount(prev => prev + 1);
-      trialInLength.current = 1;
-      currentLengthHadCorrect.current = false;
+      if (digitCount >= 9) {
+        const finalLongest = Math.max(longestSpan, digitCount);
+        const finalCorrect = correctTrials + 1;
+        const finalTotal = currentTrial + 1;
+        const finalRT = [...reactionTimes];
 
-      // continue to next trial
-      setTimeout(() => {
-        setCurrentTrial(prev => prev + 1);
-        startNewTrial(digitCount + 1);
-      }, 1500);
+        const metrics: GameMetrics = {
+          totalTrials: finalTotal,
+          correctRecalls: finalCorrect,
+          averageDigitSpan: finalLongest,
+          longestSpan: finalLongest,
+          averageReactionTime: Math.round(
+            finalRT.reduce((a, b) => a + b, 0) / finalRT.length
+          ),
+          accuracy: Math.round((finalCorrect / finalTotal) * 100),
+        };
+
+        setTimeout(() => {
+          onComplete(metrics);
+        }, 1500);
+      } else {
+        // pass — advance length, reset trial-in-length tracking
+        setDigitCount(prev => prev + 1);
+        trialInLength.current = 1;
+        currentLengthHadCorrect.current = false;
+
+        // continue to next trial
+        setTimeout(() => {
+          setCurrentTrial(prev => prev + 1);
+          startNewTrial(digitCount + 1);
+        }, 1500);
+      }
 
     } else {
       // incorrect trial
@@ -330,16 +363,8 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
               </h2>
             </div>
             <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
-              {currentTrial + 1} / {MAX_TRIALS}
+              Trial {currentTrial + 1}
             </div>
-          </div>
-          <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-[#ffb757]"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentTrial + 1) / MAX_TRIALS) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
           </div>
         </div>
       </div>
