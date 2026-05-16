@@ -352,30 +352,6 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Reaction Time */}
-        {(selectedGame === 'all' || selectedGame === 'gonogo') && metrics.avgReactionTime > 0 && (
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl p-4`}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className={`w-8 h-8 ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-50'} rounded-lg flex items-center justify-center`}>
-                <Timer className="w-4 h-4 text-blue-500" />
-              </div>
-              {getTrend('reactionTime') === 'improving' && <TrendingDown className="w-4 h-4 text-green-500" />}
-              {getTrend('reactionTime') === 'declining' && <TrendingUp className="w-4 h-4 text-red-500" />}
-              {getTrend('reactionTime') === 'stable' && <Minus className="w-4 h-4 text-gray-400" />}
-            </div>
-            <div className={`text-2xl font-bold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>
-              {Math.round(Math.max(0, Math.min(100, ((1000 - metrics.avgReactionTime) / 800) * 100)))}%
-            </div>
-            <div className={`text-xs ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'}`}>
-              Reaction Speed Score
-            </div>
-          </motion.div>
-        )}
-
         {/* Inhibition Score */}
         {(selectedGame === 'all' || selectedGame === 'gonogo') && metrics.avgInhibitionScore > 0 && (
           <motion.div
@@ -509,26 +485,15 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                 formatter={(value) => [`${value}%`]}
               />
               {(selectedGame === 'all' || selectedGame === 'gonogo') && (
-                <>
-                  <Line
-                    type="monotone"
-                    dataKey="Reaction Score"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6', r: chartData.length === 1 ? 6 : 4 }}
-                    connectNulls
-                    name="Reaction Speed"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Inhibition Score"
-                    stroke="#a855f7"
-                    strokeWidth={2}
-                    dot={{ fill: '#a855f7', r: chartData.length === 1 ? 6 : 4 }}
-                    connectNulls
-                    name="Inhibition"
-                  />
-                </>
+                <Line
+                  type="monotone"
+                  dataKey="Inhibition Score"
+                  stroke="#a855f7"
+                  strokeWidth={2}
+                  dot={{ fill: '#a855f7', r: chartData.length === 1 ? 6 : 4 }}
+                  connectNulls
+                  name="Inhibition"
+                />
               )}
               {(selectedGame === 'all' || selectedGame === 'counting') && (
                 <Line
