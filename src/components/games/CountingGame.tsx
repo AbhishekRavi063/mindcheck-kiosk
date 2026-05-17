@@ -169,7 +169,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    {startingNumber}
+                    100
                   </motion.span>
                   <motion.span
                     className={isDarkMode ? 'text-[#ece5de]/40' : 'text-[#8d654c]/40'}
@@ -185,7 +185,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.6 }}
                   >
-                    {startingNumber - 7}
+                    93
                   </motion.span>
                   <motion.span
                     className={isDarkMode ? 'text-[#ece5de]/40' : 'text-[#8d654c]/40'}
@@ -201,7 +201,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                     animate={{ scale: 1 }}
                     transition={{ delay: 1.0 }}
                   >
-                    {startingNumber - 14}
+                    86
                   </motion.span>
                 </div>
               </div>
@@ -210,7 +210,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
             {/* Instructions */}
             <div className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl p-6 mb-8 text-left`}>
               <p className={`${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} leading-relaxed mb-3`}>
-                You'll start from <span className="font-semibold text-[#ffb757]">{startingNumber}</span> and subtract <span className="font-semibold text-[#ffb757]">7</span> each time.
+                You'll start from a number and subtract <span className="font-semibold text-[#ffb757]">7</span> each time.
               </p>
               <p className={`${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'} text-sm`}>
                 Take your time. There's no rush. 🌿
@@ -251,7 +251,10 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col`}>
       {/* Header with Progress */}
-      <div className="p-6 pb-4">
+      <div
+        className="px-6 pb-3"
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' }}
+      >
         <div className="max-w-[390px] mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -283,8 +286,8 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6">
-        <div className="max-w-[390px] w-full space-y-8">
+      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-2 pb-2">
+        <div className="max-w-[390px] w-full space-y-3">
           {/* Instruction */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -307,41 +310,21 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
           {/* Input Display */}
           <div className="relative">
             <motion.div
-              className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-3xl p-6 shadow-lg min-h-[100px] flex items-center justify-center`}
+              className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-3xl p-4 shadow-lg min-h-[72px] flex items-center justify-center`}
               layout
             >
               <AnimatePresence mode="wait">
                 {feedback ? (
-                  <motion.div
-                    key="feedback"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="text-center"
-                  >
-                    {feedback === 'correct' ? (
-                      <div>
-                        <div className={`w-16 h-16 ${isDarkMode ? 'bg-[#ffb757]/20' : 'bg-[#ffb757]/10'} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                          <CheckCircle2 className="w-8 h-8 text-[#ffb757]" />
-                        </div>
-                        <p className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
-                          Perfect! ✨
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className={`w-16 h-16 ${isDarkMode ? 'bg-[#ddc4af]/20' : 'bg-[#ddc4af]/30'} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                          <span className="text-3xl">🌟</span>
-                        </div>
-                        <p className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>
-                          Not quite
-                        </p>
-                        <p className={`text-sm ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'}`}>
-                          The answer was {expectedAnswer}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
+                  <div className="flex items-center justify-center min-h-[72px]">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className={`text-sm ${isDarkMode ? 'text-[#ece5de]/40' : 'text-[#8d654c]/40'}`}
+                    >
+                      Next...
+                    </motion.div>
+                  </div>
                 ) : (
                   <motion.div
                     key="input"
@@ -374,7 +357,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                     key={digit}
                     onClick={() => handleNumberInput(digit.toString())}
                     whileTap={{ scale: 0.95 }}
-                    className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-6 text-2xl font-semibold ${
+                    className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-3 text-2xl font-semibold ${
                       isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'
                     } shadow-sm active:shadow-none transition-shadow`}
                   >
@@ -386,7 +369,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                 <motion.button
                   onClick={handleClear}
                   whileTap={{ scale: 0.95 }}
-                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-6 text-sm font-semibold ${
+                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-3 text-sm font-semibold ${
                     isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'
                   } shadow-sm active:shadow-none transition-shadow`}
                 >
@@ -395,7 +378,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                 <motion.button
                   onClick={() => handleNumberInput('0')}
                   whileTap={{ scale: 0.95 }}
-                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-6 text-2xl font-semibold ${
+                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-3 text-2xl font-semibold ${
                     isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'
                   } shadow-sm active:shadow-none transition-shadow`}
                 >
@@ -404,7 +387,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                 <motion.button
                   onClick={handleBackspace}
                   whileTap={{ scale: 0.95 }}
-                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-6 text-sm font-semibold ${
+                  className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl py-3 text-sm font-semibold ${
                     isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'
                   } shadow-sm active:shadow-none transition-shadow`}
                 >
@@ -417,7 +400,7 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
                 onClick={handleSubmit}
                 disabled={userInput === ''}
                 whileTap={{ scale: userInput ? 0.98 : 1 }}
-                className={`w-full py-5 rounded-2xl font-semibold text-white shadow-lg transition-all ${
+                className={`w-full py-3 rounded-2xl font-semibold text-white shadow-lg transition-all ${
                   userInput
                     ? 'bg-gradient-to-r from-[#ffb757] to-[#ff9a3d] active:shadow-none'
                     : 'bg-gray-300 cursor-not-allowed'
@@ -432,11 +415,11 @@ export function CountingGame({ onComplete, isDarkMode, onBack, onSkip }: Countin
 
       {/* Skip Option */}
       {onSkip && !feedback && (
-        <div className="pb-6 px-6">
+        <div className="pb-3 px-6">
           <div className="max-w-[390px] mx-auto">
             <button
               onClick={onSkip}
-              className={`w-full py-3 rounded-full font-medium transition-all ${
+              className={`w-full py-2 rounded-full font-medium transition-all ${
                 isDarkMode
                   ? 'text-[#ece5de]/60 hover:text-[#ece5de]'
                   : 'text-[#8d654c]/60 hover:text-[#8d654c]'
