@@ -21,17 +21,12 @@ interface QuestionScreenProps {
 export function QuestionScreen({ question, onAnswer, progress, questionNumber, onBack, isDarkMode }: QuestionScreenProps) {
   const [value, setValue] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(true); // Changed to true so button is active from start
-  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const [supportiveQuote] = useState(getQuoteForQuestion(question.text));
   const sliderRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-
-  // Prevent window scroll while this screen is active
-  useLayoutEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   // Reset slider and scroll position when question changes (before paint)
   useLayoutEffect(() => {
@@ -171,43 +166,59 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     handleSliderInteraction(e.clientX);
     e.preventDefault();
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       handleSliderInteraction(e.clientX);
       e.preventDefault();
     }
   };
 
   const handleMouseUp = () => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       snapToNearestValue();
     }
-    setIsDragging(false);
+    isDraggingRef.current = false;
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isDraggingRef.current = true;
     handleSliderInteraction(e.touches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    handleSliderInteraction(e.touches[0].clientX);
+    if (!isDraggingRef.current) return;
+
+    const touch = e.touches[0];
+
+    // Calculate movement delta from touch start
+    // Only handle horizontal movement — ignore vertical swipes
+    const deltaX = Math.abs(touch.clientX - (touchStartX.current ?? touch.clientX));
+    const deltaY = Math.abs(touch.clientY - (touchStartY.current ?? touch.clientY));
+
+    // If movement is more vertical than horizontal, let scroll handle it
+    if (deltaY > deltaX) return;
+
+    handleSliderInteraction(touch.clientX);
   };
 
   const handleTouchEnd = () => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       snapToNearestValue();
     }
-    setIsDragging(false);
+    isDraggingRef.current = false;
+    touchStartX.current = null;
+    touchStartY.current = null;
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!isDragging) {
+    if (!isDraggingRef.current) {
       handleSliderInteraction(e.clientX);
       // Small delay to allow the value to update before snapping
       setTimeout(() => {
@@ -230,7 +241,10 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   return (
     <div className={`fixed inset-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col overflow-hidden`}>
       {/* Header */}
-      <div className={`px-5 pt-3 pb-1.5 flex-shrink-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'}`}>
+      <div
+        className={`px-5 pb-1.5 flex-shrink-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'}`}
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' }}
+      >
         <div className="flex items-center justify-between mb-1.5">
           <button
             onClick={onBack}
@@ -260,7 +274,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
       </div>
 
       {/* Main Content - Scrollable, vertical only */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-2 pb-24" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+      <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-5 pt-2 pb-6" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
         <div className="flex flex-col">
           <div className="flex-shrink-0">
             {/* Timeframe */}
@@ -359,7 +373,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                 className="relative h-4 rounded-full cursor-pointer mx-4"
                 style={{
                   background: 'linear-gradient(to right, #ffb757 0%, #ddc4af 50%, #8d654c 100%)',
-                  touchAction: 'none'
+                  touchAction: 'pan-y'
                 }}
               >
                 {/* Slider thumb */}
@@ -369,10 +383,10 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                     left: `${sliderPosition}%`,
                     x: '-50%',
                     border: '3px solid #ffb757',
-                    boxShadow: isDragging ? '0 8px 20px rgba(255, 183, 87, 0.5)' : '0 4px 12px rgba(255, 183, 87, 0.3)'
+                    boxShadow: isDraggingRef.current ? '0 8px 20px rgba(255, 183, 87, 0.5)' : '0 4px 12px rgba(255, 183, 87, 0.3)'
                   }}
                   animate={{
-                    scale: isDragging ? 1.2 : 1
+                    scale: isDraggingRef.current ? 1.2 : 1
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
@@ -471,7 +485,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className={`text-center px-4 mb-4 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
+              className={`text-center px-4 mb-4 mt-16 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
             >
               <div className={`text-[14px] font-medium leading-snug ${isDarkMode ? 'text-[#ffb757]/85' : 'text-[#8d654c]/85'}`}>
                 "{supportiveQuote.text}"
@@ -482,70 +496,6 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
             </motion.div>
           </div>
 
-          {/* Decorative Bottom Section - Reduced */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="flex-1 flex items-end justify-center pb-8 relative overflow-hidden min-h-[80px]"
-          >
-            {/* Floating decorative elements */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Circle 1 */}
-              <motion.div
-                animate={{
-                  y: [0, -15, 0],
-                  opacity: [0.15, 0.25, 0.15]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute w-24 h-24 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, ${isDarkMode ? '#ffb757' : '#ddc4af'}, transparent)`,
-                  left: '15%',
-                  top: '20%'
-                }}
-              />
-              
-              {/* Circle 2 */}
-              <motion.div
-                animate={{
-                  y: [0, -20, 0],
-                  opacity: [0.1, 0.2, 0.1]
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1
-                }}
-                className="absolute w-32 h-32 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, ${isDarkMode ? '#ddc4af' : '#ffb757'}, transparent)`,
-                  right: '20%',
-                  top: '40%'
-                }}
-              />
-
-              {/* Subtle affirmation text */}
-              <motion.div
-                animate={{
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className={`text-center text-xs ${isDarkMode ? 'text-[#ece5de]/30' : 'text-[#8d654c]/30'} px-8`}
-              >
-                Take your time • Your feelings are valid
-              </motion.div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </div>
