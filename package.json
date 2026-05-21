@@ -59,12 +59,15 @@
     "cross-env": "^10.1.0",
     "typescript": "^5.6.3",
     "vite": "^6.3.5",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.1.6"
   },
   "scripts": {
     "dev": "vite",
     "build": "cross-env BUILD_TARGET=pwa vite build",
-    "build:pwa": "cross-env BUILD_TARGET=pwa vite build",
-    "preview": "vite preview"
+    "build:pwa": "cross-env BUILD_TARGET=pwa vite build && node -e \"const fs=require('fs');fs.mkdirSync('dist/.vercel',{recursive:true});fs.writeFileSync('dist/.vercel/project.json',JSON.stringify({projectId:'prj_KWPh3eKQ9jnFiRxpKpTemnyd1wOx',orgId:'team_lDTCE7TrMS7hwzb502HVTe22',projectName:'mindcheck-pwa'}))\"",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "deploy": "npm run build:pwa && node scripts/prep-vercel-output.js && vercel deploy --prebuilt --prod"
   }
 }

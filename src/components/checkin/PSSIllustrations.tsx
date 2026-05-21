@@ -18,7 +18,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 1) {
     const shockIntensity = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Unexpected event - lightning bolt */}
         <motion.path
           d="M140 40 L130 70 L145 70 L125 110"
@@ -96,7 +96,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 2) {
     const lossOfControl = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Person's head */}
         <circle cx="100" cy="80" r="25" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         <circle cx="93" cy="76" r="3" fill={baseColor} />
@@ -166,7 +166,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 3) {
     const nervousness = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head with tension */}
         <motion.circle 
           cx="100" cy="85" r="28" 
@@ -238,7 +238,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 4) {
     const confidence = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head */}
         <circle cx="100" cy="85" r="26" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -295,7 +295,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 5) {
     const positivity = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - happy */}
         <circle cx="100" cy="80" r="26" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         <circle cx="92" cy="77" r="3" fill={baseColor} />
@@ -374,7 +374,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 6) {
     const overwhelm = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - stressed */}
         <circle cx="100" cy="90" r="25" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         <circle cx="93" cy="87" r="2.5" fill={baseColor} />
@@ -426,7 +426,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 7) {
     const control = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - calm */}
         <circle cx="100" cy="85" r="26" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -486,7 +486,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 8) {
     const onTop = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Mountain peak */}
         <path 
           d="M50 160 L100 80 L150 160 Z" 
@@ -561,7 +561,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 9) {
     const anger = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - angry */}
         <motion.circle 
           cx="100" cy="90" r="28" 
@@ -642,7 +642,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
   if (questionNumber === 10) {
     const overwhelmed = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Person's head peeking out */}
         <motion.circle 
           cx="100" 

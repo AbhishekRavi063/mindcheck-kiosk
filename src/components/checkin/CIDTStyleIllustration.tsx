@@ -54,8 +54,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person sitting with hobby items (book, craft) - engaged vs disengaged
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -116,8 +116,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person with changing facial expression and posture
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -187,8 +187,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person in bed - sleeping well vs restless
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -252,8 +252,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person walking/standing - energetic vs tired
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -341,8 +341,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person with Indian food (thali)
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -400,8 +400,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person looking down vs standing confident
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -459,8 +459,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person reading/working - focused vs distracted
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -524,8 +524,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // Person showing stress/restlessness
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -604,8 +604,8 @@ export function CIDTStyleIllustration({ questionText, sliderPercentage, isDarkMo
         // General person
         return (
           <motion.svg 
-            width="160" 
-            height="160" 
+            width="100%"
+            height="100%"
             viewBox="0 0 160 160"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

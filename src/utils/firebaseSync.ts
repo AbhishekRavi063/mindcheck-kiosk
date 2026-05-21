@@ -74,7 +74,7 @@ function getSeverityLabel(type: QuestionnaireType, score: number): string {
       if (score <= 26) return 'moderate';
       return 'high';
     case 'rses':
-      if (score < 15)  return 'low';
+      if (score <= 15) return 'low';
       if (score <= 25) return 'normal';
       return 'high';
   }

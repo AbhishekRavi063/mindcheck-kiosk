@@ -9,6 +9,8 @@ import { MemoryGame, GameMetrics as MemoryMetrics } from './games/MemoryGame';
 import { CountingGame, GameMetrics as CountingMetrics } from './games/CountingGame';
 import { phq9Questions, pssQuestions, rsesQuestions, gad7Questions, functionalImpairmentQuestion } from '../data/checkInQuestions';
 import { saveQuestionnaire, saveGame, saveJournal, logUserActivity } from '../utils/firebaseSync';
+import { calculatePssScore } from '../utils/pssScore';
+import { calculateRsesScore } from '../utils/rsesScore';
 import { QuestionnaireScoreScreen } from './checkin/QuestionnaireScoreScreen';
 import { GameScoreScreen } from './checkin/GameScoreScreen';
 import { QuestionScreen } from './checkin/QuestionScreen';
@@ -148,7 +150,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
         setQuestionIndex(questionIndex + 1);
 
         if (questionIndex === 9) {
-          const pssScore = newAnswers.reduce((a, b) => a + b, 0);
+          const pssScore = calculatePssScore(newAnswers);
           saveQuestionnaire({
             questionnaire_type: 'pss',
             checkin_type: checkInType === 'full' ? 'guided' : 'individual',
@@ -167,11 +169,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
         setQuestionIndex(questionIndex + 1);
 
         if (questionIndex === 9) {
-          const rsesReverse = [false, false, true, false, true, false, false, true, true, true];
-          const rsesScore = newAnswers.reduce((total, answer, index) => {
-            const score = rsesReverse[index] ? (3 - answer) + 1 : answer + 1;
-            return total + score;
-          }, 0);
+          const rsesScore = calculateRsesScore(newAnswers);
           saveQuestionnaire({
             questionnaire_type: 'rses',
             checkin_type: checkInType === 'full' ? 'guided' : 'individual',
@@ -288,29 +286,9 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
     if (type === 'phq9') {
       return phq9Answers.reduce((a, b) => a + b, 0);
     } else if (type === 'pss') {
-      return pssAnswers.reduce((a, b) => a + b, 0);
+      return calculatePssScore(pssAnswers);
     } else if (type === 'rses') {
-      // Calculate RSES score with reverse scoring
-      return rsesAnswers.reduce((total, answer, index) => {
-        const rsesQuestionsReverse = [
-          { reverseScore: false }, // Q1
-          { reverseScore: false }, // Q2
-          { reverseScore: true },  // Q3
-          { reverseScore: false }, // Q4
-          { reverseScore: true },  // Q5
-          { reverseScore: false }, // Q6
-          { reverseScore: false }, // Q7
-          { reverseScore: true },  // Q8
-          { reverseScore: true },  // Q9
-          { reverseScore: true },  // Q10
-        ];
-        
-        const question = rsesQuestionsReverse[index];
-        if (!question) return total;
-        
-        const score = question.reverseScore ? (3 - answer) + 1 : answer + 1;
-        return total + score;
-      }, 0);
+      return calculateRsesScore(rsesAnswers);
     } else if (type === 'gad7') {
       return gad7Answers.reduce((a, b) => a + b, 0);
     }

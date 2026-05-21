@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { motion, useSpring } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import type { Question } from '../../data/checkInQuestions';
@@ -21,14 +21,18 @@ interface QuestionScreenProps {
 export function QuestionScreen({ question, onAnswer, progress, questionNumber, onBack, isDarkMode }: QuestionScreenProps) {
   const [value, setValue] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(true); // Changed to true so button is active from start
-  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const [supportiveQuote] = useState(getQuoteForQuestion(question.text));
   const sliderRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
-  // Reset slider to leftmost position when question changes
-  useEffect(() => {
+  // Reset slider and scroll position when question changes (before paint)
+  useLayoutEffect(() => {
     setValue(0);
-    setHasInteracted(true); // Keep button active when question changes
+    setHasInteracted(true);
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [question.id]);
 
   // Use spring animation for smoother movement
@@ -162,45 +166,59 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     handleSliderInteraction(e.clientX);
     e.preventDefault();
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       handleSliderInteraction(e.clientX);
       e.preventDefault();
     }
   };
 
   const handleMouseUp = () => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       snapToNearestValue();
     }
-    setIsDragging(false);
+    isDraggingRef.current = false;
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isDraggingRef.current = true;
     handleSliderInteraction(e.touches[0].clientX);
-    e.preventDefault();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    handleSliderInteraction(e.touches[0].clientX);
-    e.preventDefault();
+    if (!isDraggingRef.current) return;
+
+    const touch = e.touches[0];
+
+    // Calculate movement delta from touch start
+    // Only handle horizontal movement — ignore vertical swipes
+    const deltaX = Math.abs(touch.clientX - (touchStartX.current ?? touch.clientX));
+    const deltaY = Math.abs(touch.clientY - (touchStartY.current ?? touch.clientY));
+
+    // If movement is more vertical than horizontal, let scroll handle it
+    if (deltaY > deltaX) return;
+
+    handleSliderInteraction(touch.clientX);
   };
 
   const handleTouchEnd = () => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       snapToNearestValue();
     }
-    setIsDragging(false);
+    isDraggingRef.current = false;
+    touchStartX.current = null;
+    touchStartY.current = null;
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!isDragging) {
+    if (!isDraggingRef.current) {
       handleSliderInteraction(e.clientX);
       // Small delay to allow the value to update before snapping
       setTimeout(() => {
@@ -221,9 +239,12 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
   const sliderPosition = (value / maxValue) * 100;
 
   return (
-    <div className={`h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col overflow-hidden`}>
-      {/* Header - Minimal spacing */}
-      <div className="px-5 pt-3 pb-1.5 flex-shrink-0">
+    <div className={`fixed inset-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col overflow-hidden`}>
+      {/* Header */}
+      <div
+        className={`px-5 pb-1.5 flex-shrink-0 ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'}`}
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' }}
+      >
         <div className="flex items-center justify-between mb-1.5">
           <button
             onClick={onBack}
@@ -252,8 +273,8 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
         </div>
       </div>
 
-      {/* Main Content - Scrollable with proper bottom padding */}
-      <div className="flex-1 overflow-y-auto px-5 pb-24">
+      {/* Main Content - Scrollable, vertical only */}
+      <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-5 pt-2 pb-6" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
         <div className="flex flex-col">
           <div className="flex-shrink-0">
             {/* Timeframe */}
@@ -271,7 +292,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.1 }}
-              className={`text-[18px] font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-4 leading-snug`}
+              className={`text-[18px] font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-2 leading-snug`}
             >
               {question.text}
             </motion.h2>
@@ -281,7 +302,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.2 }}
-              className="flex justify-center items-center mb-4 h-36 flex-shrink-0"
+              className="flex justify-center items-center mb-3 h-36 flex-shrink-0 overflow-hidden"
             >
               {question.id?.startsWith('phq9-') && questionNumber ? (
                 <SemanticIllustration 
@@ -325,20 +346,20 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               initial={currentVariant.initial}
               animate={currentVariant.animate}
               transition={{ ...currentVariant.transition, delay: 0.3 }}
-              className="mb-3"
+              className="mb-1"
             >
               {/* Helper text */}
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className={`text-center text-sm ${isDarkMode ? 'text-[#ece5de]/50' : 'text-[#8d654c]/50'} mb-3`}
+                className={`text-center text-sm ${isDarkMode ? 'text-[#ece5de]/50' : 'text-[#8d654c]/50'} mb-2`}
               >
                 Slide to select
               </motion.p>
 
               {/* Slider track wrapper with interaction handlers */}
-              <div 
+              <div
                 ref={sliderRef}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -351,7 +372,8 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                 onWheel={handleWheel}
                 className="relative h-4 rounded-full cursor-pointer mx-4"
                 style={{
-                  background: 'linear-gradient(to right, #ffb757 0%, #ddc4af 50%, #8d654c 100%)'
+                  background: 'linear-gradient(to right, #ffb757 0%, #ddc4af 50%, #8d654c 100%)',
+                  touchAction: 'pan-y'
                 }}
               >
                 {/* Slider thumb */}
@@ -361,10 +383,10 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                     left: `${sliderPosition}%`,
                     x: '-50%',
                     border: '3px solid #ffb757',
-                    boxShadow: isDragging ? '0 8px 20px rgba(255, 183, 87, 0.5)' : '0 4px 12px rgba(255, 183, 87, 0.3)'
+                    boxShadow: isDraggingRef.current ? '0 8px 20px rgba(255, 183, 87, 0.5)' : '0 4px 12px rgba(255, 183, 87, 0.3)'
                   }}
                   animate={{
-                    scale: isDragging ? 1.2 : 1
+                    scale: isDraggingRef.current ? 1.2 : 1
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
@@ -399,7 +421,7 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                         left: `${optionPosition}%`,
                         transform: 'translateX(-50%)',
                         width: 'max-content',
-                        maxWidth: '80px'
+                        maxWidth: `${Math.floor(96 / maxValue)}%`
                       }}
                     >
                       {/* Indicator dot */}
@@ -438,27 +460,12 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
               </div>
             </motion.div>
 
-            {/* Supportive Quote - Part of interaction group */}
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className={`text-center px-4 mb-4 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
-            >
-              <div className={`text-[14px] font-medium leading-snug ${isDarkMode ? 'text-[#ffb757]/85' : 'text-[#8d654c]/85'}`}>
-                "{supportiveQuote.text}"
-              </div>
-              <div className={`text-[12px] mt-1 ${isDarkMode ? 'text-[#ddc4af]/70' : 'text-[#8d654c]/60'}`}>
-                — {supportiveQuote.author}
-              </div>
-            </motion.div>
-
-            {/* Continue Button - Directly after quote */}
+            {/* Continue Button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="pb-6 flex-shrink-0"
+              transition={{ delay: 0.6 }}
+              className="pb-4 flex-shrink-0"
             >
               <button
                 onClick={handleContinue}
@@ -472,72 +479,23 @@ export function QuestionScreen({ question, onAnswer, progress, questionNumber, o
                 {hasInteracted ? 'Continue' : 'Please slide to select'}
               </button>
             </motion.div>
+
+            {/* Supportive Quote - Below continue button */}
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className={`text-center px-4 mb-4 mt-16 ${isDarkMode ? 'text-[#ffb757]' : 'text-[#8d654c]'}`}
+            >
+              <div className={`text-[14px] font-medium leading-snug ${isDarkMode ? 'text-[#ffb757]/85' : 'text-[#8d654c]/85'}`}>
+                "{supportiveQuote.text}"
+              </div>
+              <div className={`text-[12px] mt-1 ${isDarkMode ? 'text-[#ddc4af]/70' : 'text-[#8d654c]/60'}`}>
+                — {supportiveQuote.author}
+              </div>
+            </motion.div>
           </div>
 
-          {/* Decorative Bottom Section - Reduced */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="flex-1 flex items-end justify-center pb-8 relative overflow-hidden min-h-[80px]"
-          >
-            {/* Floating decorative elements */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Circle 1 */}
-              <motion.div
-                animate={{
-                  y: [0, -15, 0],
-                  opacity: [0.15, 0.25, 0.15]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute w-24 h-24 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, ${isDarkMode ? '#ffb757' : '#ddc4af'}, transparent)`,
-                  left: '15%',
-                  top: '20%'
-                }}
-              />
-              
-              {/* Circle 2 */}
-              <motion.div
-                animate={{
-                  y: [0, -20, 0],
-                  opacity: [0.1, 0.2, 0.1]
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1
-                }}
-                className="absolute w-32 h-32 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, ${isDarkMode ? '#ddc4af' : '#ffb757'}, transparent)`,
-                  right: '20%',
-                  top: '40%'
-                }}
-              />
-
-              {/* Subtle affirmation text */}
-              <motion.div
-                animate={{
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className={`text-center text-xs ${isDarkMode ? 'text-[#ece5de]/30' : 'text-[#8d654c]/30'} px-8`}
-              >
-                Take your time • Your feelings are valid
-              </motion.div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </div>

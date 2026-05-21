@@ -125,7 +125,9 @@ export default function App() {
       
       // Refresh trends data when navigating to trends tab
       if (tab === 'trends') {
-        setTrendsRefreshKey(prev => prev + 1);
+        setTimeout(() => {
+          setTrendsRefreshKey(prev => prev + 1);
+        }, 300);
       }
       
       // If user is in check-in and tries to navigate away, just reset
@@ -270,13 +272,14 @@ export default function App() {
       <div className={`max-w-[390px] mx-auto min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} relative pb-20`}>
         {/* Screen Content */}
         {showGames ? (
-          <GamesScreen 
+          <GamesScreen
             onBack={() => {
               setShowGames(false);
-              // Refresh trends data since user may have played games
-              setTrendsRefreshKey(prev => prev + 1);
-            }} 
-            isDarkMode={isDarkMode} 
+              setTimeout(() => {
+                setTrendsRefreshKey(prev => prev + 1);
+              }, 300);
+            }}
+            isDarkMode={isDarkMode}
           />
         ) : showDailyCheckIn ? (
           <DailyCheckInFlow

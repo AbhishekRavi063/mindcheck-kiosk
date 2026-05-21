@@ -27,43 +27,72 @@ export function TrendsScreen({ isDarkMode, onBack }: TrendsScreenProps) {
         // Fetch game metrics
         const gameMetrics = await getGameMetrics();
         
-        // Transform responses into the format expected by the charts
-        const transformedData = responses.map(response => {
-          // Find matching game metrics for this date
-          const responseDate = new Date(response.timestamp || response.date).toDateString();
-          const matchingGames = gameMetrics.filter(game => 
-            new Date(game.timestamp).toDateString() === responseDate
-          );
-          
-          // Calculate average game score for the day
-          let gameScore = 0;
-          if (matchingGames.length > 0) {
-            const scores = matchingGames.map(game => {
-              // Extract the primary performance metric from each game type
-              if (game.type === 'gonogo') return game.inhibitionScore || 0;
-              if (game.type === 'attention') return game.accuracy || 0;
-              if (game.type === 'memory') return game.accuracy || 0;
-              if (game.type === 'counting') return game.accuracy || 0;
-              return 0;
-            });
-            const totalScore = scores.reduce((sum, score) => sum + score, 0);
-            gameScore = Math.round(totalScore / matchingGames.length);
-          }
-          
-          return {
-            date: response.timestamp || response.date,
-            phq9Score: response.phq9Score ?? response.score,
-            pssScore: response.pssScore,
-            gameScore: gameScore,
-            rsesScore: response.rsesScore,
-            gad7Score: response.gad7Score,
-            type: response.type || 'full'
-          };
+        // Build a map of all dates that have any data
+        const allDates = new Map<string, {
+          timestamp: number | string;
+          phq9Score?: number;
+          pssScore?: number;
+          rsesScore?: number;
+          gad7Score?: number;
+          gameScore?: number;
+          type: string;
+        }>();
+
+        // First pass — add all questionnaire dates
+        responses.forEach(response => {
+          const dateKey = new Date(
+            response.timestamp || response.date
+          ).toDateString();
+          allDates.set(dateKey, {
+            timestamp: response.timestamp || response.date,
+            phq9Score: response.phq9Score ?? response.score ?? undefined,
+            pssScore: response.pssScore ?? undefined,
+            rsesScore: response.rsesScore ?? undefined,
+            gad7Score: response.gad7Score ?? undefined,
+            gameScore: undefined,
+            type: response.type || 'full',
+          });
         });
-        
-        // Sort by date (oldest to newest)
-        transformedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        
+
+        // Second pass — add game-only dates and compute gameScore
+        // Group games by date
+        const gamesByDate = new Map<string, any[]>();
+        gameMetrics.forEach(game => {
+          const dateKey = new Date(game.timestamp).toDateString();
+          if (!gamesByDate.has(dateKey)) gamesByDate.set(dateKey, []);
+          gamesByDate.get(dateKey)!.push(game);
+        });
+
+        gamesByDate.forEach((games, dateKey) => {
+          const scores = games.map(game => {
+            if (game.type === 'gonogo') return game.inhibitionScore || 0;
+            if (game.type === 'attention') return game.accuracy || 0;
+            if (game.type === 'memory') return game.accuracy || 0;
+            if (game.type === 'counting') return game.accuracy || 0;
+            return game.accuracy || 0;
+          });
+          const avgScore = Math.round(
+            scores.reduce((a, b) => a + b, 0) / scores.length
+          );
+
+          if (allDates.has(dateKey)) {
+            allDates.get(dateKey)!.gameScore = avgScore;
+          } else {
+            const game = games[0];
+            allDates.set(dateKey, {
+              timestamp: game.timestamp,
+              gameScore: avgScore,
+              type: 'individual',
+            });
+          }
+        });
+
+        // Convert map to sorted array
+        const transformedData = Array.from(allDates.values())
+          .sort((a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
         setHistory(transformedData);
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -80,15 +109,16 @@ export function TrendsScreen({ isDarkMode, onBack }: TrendsScreenProps) {
     const days = parseInt(timeRange);
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    
     return history
-      .filter(entry => new Date(entry.date) >= cutoff)
+      .filter(entry => new Date(entry.timestamp).getTime() >= cutoff.getTime())
       .map(entry => ({
-        date: new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        'Mood': entry.phq9Score,
-        'Anxiety': entry.gad7Score,
-        'Stress': entry.pssScore,
-        'Self-Esteem': entry.rsesScore
+        date: new Date(entry.timestamp).toLocaleDateString(
+          'en-US', { month: 'short', day: 'numeric' }
+        ),
+        'Mood': entry.phq9Score ?? null,
+        'Anxiety': entry.gad7Score ?? null,
+        'Stress': entry.pssScore ?? null,
+        'Self-Esteem': entry.rsesScore ?? null,
       }));
   };
 

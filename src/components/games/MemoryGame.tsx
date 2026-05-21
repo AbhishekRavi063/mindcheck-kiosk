@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Hash, CheckCircle2, X, Delete } from 'lucide-react';
+import { Hash, CheckCircle2, X, Delete, ArrowLeft } from 'lucide-react';
 import { BackButton } from '../ui/BackButton';
 
 interface MemoryGameProps {
@@ -40,15 +40,31 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
   const [isComplete, setIsComplete] = useState(false);
 
   const recallStartTime = useRef<number>(0);
+  const trialInLength = useRef<1 | 2>(1);
+  const currentLengthHadCorrect = useRef<boolean>(false);
 
-  // Generate a random digit sequence (0-9)
   const generateSequence = (length: number): number[] => {
-    return Array.from({ length }, () => Math.floor(Math.random() * 10));
+    const hasConsecutiveRun = (seq: number[]): boolean => {
+      for (let i = 0; i < seq.length - 2; i++) {
+        const d1 = seq[i + 1] - seq[i];
+        const d2 = seq[i + 2] - seq[i + 1];
+        if ((d1 === 1 && d2 === 1) || (d1 === -1 && d2 === -1)) return true;
+      }
+      return false;
+    };
+
+    const digits = [1,2,3,4,5,6,7,8,9];
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const candidate = [...digits].sort(() => Math.random() - 0.5).slice(0, length);
+      if (!hasConsecutiveRun(candidate)) return candidate;
+    }
+    return [...digits].sort(() => Math.random() - 0.5).slice(0, length);
   };
 
   // Start a new trial
-  const startNewTrial = () => {
-    const newSequence = generateSequence(digitCount);
+  const startNewTrial = (nextLength?: number) => {
+    const length = nextLength ?? digitCount;
+    const newSequence = generateSequence(length);
     setDigitSequence(newSequence);
     setUserSequence([]);
     setCurrentDigitIndex(-1);
@@ -78,11 +94,10 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
 
       return () => clearTimeout(timer);
     } else {
-      // All digits shown, move to input phase
       setTimeout(() => {
         setPhase('input');
         recallStartTime.current = Date.now();
-      }, 500);
+      }, 1000);
     }
   }, [phase, currentDigitIndex, digitSequence]);
 
@@ -108,46 +123,80 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
     setFeedbackType(isCorrect ? 'correct' : 'incorrect');
 
     if (isCorrect) {
+      currentLengthHadCorrect.current = true;
       setCorrectTrials(prev => prev + 1);
       setAllSpans(prev => [...prev, digitCount]);
+      if (digitCount > longestSpan) setLongestSpan(digitCount);
 
-      if (digitCount > longestSpan) {
-        setLongestSpan(digitCount);
-      }
-
-      // Increase difficulty
-      setDigitCount(prev => prev + 1);
-    } else {
-      // Record current span (they failed at this level)
-      setAllSpans(prev => [...prev, digitCount - 1]);
-    }
-
-    // Move to next trial
-    setTimeout(() => {
-      const nextTrial = currentTrial + 1;
-      setCurrentTrial(nextTrial);
-
-      if (nextTrial >= MAX_TRIALS) {
-        // Game complete
-        const finalLongest = isCorrect && digitCount > longestSpan ? digitCount : longestSpan;
-        const finalSpans = [...allSpans, isCorrect ? digitCount : digitCount - 1];
+      if (digitCount >= 9) {
+        const finalLongest = Math.max(longestSpan, digitCount);
+        const finalCorrect = correctTrials + 1;
+        const finalTotal = currentTrial + 1;
+        const finalRT = [...reactionTimes];
 
         const metrics: GameMetrics = {
-          totalTrials: MAX_TRIALS,
-          correctRecalls: correctTrials + (isCorrect ? 1 : 0),
-          averageDigitSpan: parseFloat((finalSpans.reduce((a, b) => a + b, 0) / finalSpans.length).toFixed(1)),
+          totalTrials: finalTotal,
+          correctRecalls: finalCorrect,
+          averageDigitSpan: finalLongest,
           longestSpan: finalLongest,
-          averageReactionTime: reactionTimes.length > 0
-            ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
-            : 0,
-          accuracy: Math.round(((correctTrials + (isCorrect ? 1 : 0)) / MAX_TRIALS) * 100)
+          averageReactionTime: Math.round(
+            finalRT.reduce((a, b) => a + b, 0) / finalRT.length
+          ),
+          accuracy: Math.round((finalCorrect / finalTotal) * 100),
         };
-        setIsComplete(true);
-        setTimeout(() => onComplete(metrics), 2000);
+
+        setTimeout(() => {
+          onComplete(metrics);
+        }, 1500);
       } else {
-        startNewTrial();
+        // pass — advance length, reset trial-in-length tracking
+        setDigitCount(prev => prev + 1);
+        trialInLength.current = 1;
+        currentLengthHadCorrect.current = false;
+
+        // continue to next trial
+        setTimeout(() => {
+          setCurrentTrial(prev => prev + 1);
+          startNewTrial(digitCount + 1);
+        }, 1500);
       }
-    }, 1500);
+
+    } else {
+      // incorrect trial
+      setAllSpans(prev => [...prev, digitCount - 1]);
+
+      if (trialInLength.current === 1) {
+        // first failure at this length — give trial 2
+        trialInLength.current = 2;
+        setTimeout(() => {
+          setCurrentTrial(prev => prev + 1);
+          startNewTrial(digitCount);
+        }, 1500);
+
+      } else {
+        // second failure at this length — STOP
+        const finalLongest = longestSpan;
+        const finalSpans = [...allSpans, digitCount - 1];
+        const finalCorrect = correctTrials;
+        const finalTotal = currentTrial + 1;
+        const finalRT = [...reactionTimes];
+
+        const metrics: GameMetrics = {
+          totalTrials: finalTotal,
+          correctRecalls: finalCorrect,
+          averageDigitSpan: finalLongest,
+          longestSpan: finalLongest,
+          averageReactionTime: Math.round(
+            finalRT.reduce((a, b) => a + b, 0) / finalRT.length
+          ),
+          accuracy: Math.round((finalCorrect / finalTotal) * 100),
+        };
+
+        setTimeout(() => {
+          onComplete(metrics);
+        }, 1500);
+      }
+    }
   };
 
   // Handle backspace/delete last digit
@@ -295,25 +344,27 @@ export function MemoryGame({ onComplete, isDarkMode = false, onBack, onSkip }: M
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col`}>
+    <div className={`${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} flex flex-col`} style={{ minHeight: '100dvh' }}>
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="max-w-[390px] mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
-              Digit Span Game
-            </h2>
-            <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
-              {currentTrial + 1} / {MAX_TRIALS}
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className={`w-9 h-9 ${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/60'} rounded-full flex items-center justify-center active:scale-95 transition-transform`}
+                >
+                  <ArrowLeft className={`w-4 h-4 ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`} />
+                </button>
+              )}
+              <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
+                Digit Span Game
+              </h2>
             </div>
-          </div>
-          <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-[#ffb757]"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentTrial + 1) / MAX_TRIALS) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
+            <div className={`text-sm ${isDarkMode ? 'text-[#ece5de]/70' : 'text-[#8d654c]/70'}`}>
+              Trial {currentTrial + 1}
+            </div>
           </div>
         </div>
       </div>

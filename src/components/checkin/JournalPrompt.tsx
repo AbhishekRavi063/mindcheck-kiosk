@@ -105,6 +105,8 @@ export function JournalPrompt({ onComplete, onSkip, isDarkMode, onBack, isStanda
   const [savedPrompt, setSavedPrompt] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     // Get a random prompt when component mounts
@@ -213,8 +215,13 @@ export function JournalPrompt({ onComplete, onSkip, isDarkMode, onBack, isStanda
   };
 
   const handleFinish = () => {
-    // Complete and return to home
-    onComplete(savedEntry, savedHashtags, savedEmotions, savedMedia, savedPrompt, savedMoodIntensities);
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    onComplete(
+      savedEntry, savedHashtags, savedEmotions,
+      savedMedia, savedPrompt, savedMoodIntensities
+    );
   };
 
   const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.6): Promise<string> => {
@@ -943,7 +950,8 @@ export function JournalPrompt({ onComplete, onSkip, isDarkMode, onBack, isStanda
                 <div className="space-y-3 pt-2">
                   <button
                     onClick={handleFinish}
-                    className="w-full bg-[#ffb757] text-white py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#ffb757]/20 active:scale-[0.98] transition-transform"
+                    disabled={isSaving}
+                    className="w-full bg-[#ffb757] text-white py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#ffb757]/20 active:scale-[0.98] transition-transform disabled:opacity-50"
                   >
                     <span>Done</span>
                     <Check className="w-5 h-5" />

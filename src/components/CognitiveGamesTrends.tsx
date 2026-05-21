@@ -25,6 +25,8 @@ interface GameMetric {
   totalPairs?: number;
   correctCount?: number;
   totalNumbers?: number;
+  longestSequence?: number;
+  longestSpan?: number;
 }
 
 export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTrendsProps) {
@@ -99,12 +101,12 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
       ? gonogoGames.reduce((sum, m) => sum + (m.inhibitionScore || 0), 0) / gonogoGames.length
       : 0;
 
-    const avgAccuracy = attentionGames.length > 0
-      ? attentionGames.reduce((sum, m) => sum + (m.accuracy || 0), 0) / attentionGames.length
+    const avgLongestSequence = attentionGames.length > 0
+      ? attentionGames.reduce((sum, m) => sum + (m.longestSequence || 0), 0) / attentionGames.length
       : 0;
 
-    const avgMemoryScore = memoryGames.length > 0
-      ? memoryGames.reduce((sum, m) => sum + (m.accuracy || 0), 0) / memoryGames.length
+    const avgLongestSpan = memoryGames.length > 0
+      ? memoryGames.reduce((sum, m) => sum + (m.longestSpan || 0), 0) / memoryGames.length
       : 0;
 
     const avgCountingScore = countingGames.length > 0
@@ -114,8 +116,8 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
     return {
       avgReactionTime,
       avgInhibitionScore,
-      avgAccuracy,
-      avgMemoryScore,
+      avgLongestSequence,
+      avgLongestSpan,
       avgCountingScore,
       totalGames: filtered.length
     };
@@ -149,12 +151,16 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
         ? gonogoMetrics.reduce((sum, m) => sum + (m.inhibitionScore || 0), 0) / gonogoMetrics.length
         : null;
 
-      const avgAccuracy = attentionMetrics.length > 0
-        ? attentionMetrics.reduce((sum, m) => sum + (m.accuracy || 0), 0) / attentionMetrics.length
+      const avgLongestSequence = attentionMetrics.length > 0
+        ? attentionMetrics.reduce(
+            (sum, m) => sum + (m.longestSequence || 0), 0
+          ) / attentionMetrics.length
         : null;
 
-      const avgMemoryAccuracy = memoryMetrics.length > 0
-        ? memoryMetrics.reduce((sum, m) => sum + (m.accuracy || 0), 0) / memoryMetrics.length
+      const avgLongestSpan = memoryMetrics.length > 0
+        ? memoryMetrics.reduce(
+            (sum, m) => sum + (m.longestSpan || 0), 0
+          ) / memoryMetrics.length
         : null;
 
       const avgCountingAccuracy = countingMetrics.length > 0
@@ -171,8 +177,10 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
         date,
         'Reaction Score': reactionScore,
         'Inhibition Score': avgInhibitionScore ? Math.round(avgInhibitionScore) : null,
-        'Attention Accuracy': avgAccuracy ? Math.round(avgAccuracy) : null,
-        'Memory Accuracy': avgMemoryAccuracy ? Math.round(avgMemoryAccuracy) : null,
+        'Spatial Span': avgLongestSequence !== null
+          ? parseFloat(avgLongestSequence.toFixed(1)) : null,
+        'Digit Span': avgLongestSpan !== null
+          ? parseFloat(avgLongestSpan.toFixed(1)) : null,
         'Counting Accuracy': avgCountingAccuracy ? Math.round(avgCountingAccuracy) : null
       };
     }).sort((a, b) => {
@@ -344,30 +352,6 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Reaction Time */}
-        {(selectedGame === 'all' || selectedGame === 'gonogo') && metrics.avgReactionTime > 0 && (
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl p-4`}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className={`w-8 h-8 ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-50'} rounded-lg flex items-center justify-center`}>
-                <Timer className="w-4 h-4 text-blue-500" />
-              </div>
-              {getTrend('reactionTime') === 'improving' && <TrendingDown className="w-4 h-4 text-green-500" />}
-              {getTrend('reactionTime') === 'declining' && <TrendingUp className="w-4 h-4 text-red-500" />}
-              {getTrend('reactionTime') === 'stable' && <Minus className="w-4 h-4 text-gray-400" />}
-            </div>
-            <div className={`text-2xl font-bold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>
-              {Math.round(Math.max(0, Math.min(100, ((1000 - metrics.avgReactionTime) / 800) * 100)))}%
-            </div>
-            <div className={`text-xs ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'}`}>
-              Reaction Speed Score
-            </div>
-          </motion.div>
-        )}
-
         {/* Inhibition Score */}
         {(selectedGame === 'all' || selectedGame === 'gonogo') && metrics.avgInhibitionScore > 0 && (
           <motion.div
@@ -393,8 +377,8 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
           </motion.div>
         )}
 
-        {/* Attention Accuracy */}
-        {(selectedGame === 'all' || selectedGame === 'attention') && metrics.avgAccuracy > 0 && (
+        {/* Spatial Span */}
+        {(selectedGame === 'all' || selectedGame === 'attention') && metrics.avgLongestSequence > 0 && (
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -410,16 +394,16 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
               {getTrend('accuracy') === 'stable' && <Minus className="w-4 h-4 text-gray-400" />}
             </div>
             <div className={`text-2xl font-bold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>
-              {Math.round(metrics.avgAccuracy)}%
+              {parseFloat(metrics.avgLongestSequence.toFixed(1))}
             </div>
             <div className={`text-xs ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'}`}>
-              Attention Accuracy
+              Spatial Span (max 9)
             </div>
           </motion.div>
         )}
 
-        {/* Memory Score */}
-        {(selectedGame === 'all' || selectedGame === 'memory') && metrics.avgMemoryScore > 0 && (
+        {/* Digit Span */}
+        {(selectedGame === 'all' || selectedGame === 'memory') && metrics.avgLongestSpan > 0 && (
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -432,10 +416,10 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
               </div>
             </div>
             <div className={`text-2xl font-bold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>
-              {Math.round(metrics.avgMemoryScore)}%
+              {parseFloat(metrics.avgLongestSpan.toFixed(1))}
             </div>
             <div className={`text-xs ${isDarkMode ? 'text-[#ece5de]/60' : 'text-[#8d654c]/60'}`}>
-              Memory Accuracy
+              Digit Span (max 9)
             </div>
           </motion.div>
         )}
@@ -463,22 +447,28 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
         )}
       </div>
 
-      {/* Charts */}
-      {chartData.length > 1 && (
+      {/* Chart 1 — Performance (0–100%) */}
+      {chartData.length >= 1 &&
+       (selectedGame === 'all' || selectedGame === 'gonogo' ||
+        selectedGame === 'counting') && (
         <div className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl p-6`}>
           <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-4`}>
             Performance Over Time
           </h4>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#ffb757/20' : '#ddc4af/40'} />
-              <XAxis 
-                dataKey="date" 
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="date"
                 tick={{ fill: isDarkMode ? '#ece5de' : '#8d654c', fontSize: 11 }}
                 stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
                 padding={{ left: 20, right: 20 }}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fill: isDarkMode ? '#ece5de' : '#8d654c', fontSize: 11 }}
                 stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
                 domain={[0, 100]}
@@ -487,59 +477,98 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
               <Tooltip
                 contentStyle={{
                   backgroundColor: isDarkMode ? '#2a2218' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#ffb757/40' : '#ddc4af/60'}`,
+                  border: `1px solid ${isDarkMode ? '#ffb757' : '#ddc4af'}`,
                   borderRadius: '8px',
-                  color: isDarkMode ? '#ece5de' : '#8d654c'
+                  color: isDarkMode ? '#ece5de' : '#8d654c',
+                  fontSize: '12px'
                 }}
+                formatter={(value) => [`${value}%`]}
               />
               {(selectedGame === 'all' || selectedGame === 'gonogo') && (
-                <>
-                  <Line 
-                    type="monotone" 
-                    dataKey="Reaction Score" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6', r: 4 }}
-                    connectNulls
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="Inhibition Score" 
-                    stroke="#a855f7" 
-                    strokeWidth={2}
-                    dot={{ fill: '#a855f7', r: 4 }}
-                    connectNulls
-                  />
-                </>
-              )}
-              {(selectedGame === 'all' || selectedGame === 'attention') && (
-                <Line 
-                  type="monotone" 
-                  dataKey="Attention Accuracy" 
-                  stroke="#22c55e" 
+                <Line
+                  type="monotone"
+                  dataKey="Inhibition Score"
+                  stroke="#a855f7"
                   strokeWidth={2}
-                  dot={{ fill: '#22c55e', r: 4 }}
+                  dot={{ fill: '#a855f7', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
-                />
-              )}
-              {(selectedGame === 'all' || selectedGame === 'memory') && (
-                <Line 
-                  type="monotone" 
-                  dataKey="Memory Accuracy" 
-                  stroke="#f97316" 
-                  strokeWidth={2}
-                  dot={{ fill: '#f97316', r: 4 }}
-                  connectNulls
+                  name="Inhibition"
                 />
               )}
               {(selectedGame === 'all' || selectedGame === 'counting') && (
-                <Line 
-                  type="monotone" 
-                  dataKey="Counting Accuracy" 
-                  stroke="#eab308" 
+                <Line
+                  type="monotone"
+                  dataKey="Counting Accuracy"
+                  stroke="#eab308"
                   strokeWidth={2}
-                  dot={{ fill: '#eab308', r: 4 }}
+                  dot={{ fill: '#eab308', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
+                  name="Counting Accuracy"
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Chart 2 — Memory Span (0–9) */}
+      {chartData.length >= 1 &&
+       (selectedGame === 'all' || selectedGame === 'memory' ||
+        selectedGame === 'attention') && (
+        <div className={`${isDarkMode ? 'bg-[#2a2218]' : 'bg-white/80'} rounded-2xl p-6 mt-4`}>
+          <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-4`}>
+            Memory Span Over Time
+          </h4>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: isDarkMode ? '#ece5de' : '#8d654c', fontSize: 11 }}
+                stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
+                padding={{ left: 20, right: 20 }}
+              />
+              <YAxis
+                tick={{ fill: isDarkMode ? '#ece5de' : '#8d654c', fontSize: 11 }}
+                stroke={isDarkMode ? '#ffb757' : '#ddc4af'}
+                domain={[0, 9]}
+                ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                tickFormatter={(value) => `${value}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: isDarkMode ? '#2a2218' : '#ffffff',
+                  border: `1px solid ${isDarkMode ? '#ffb757' : '#ddc4af'}`,
+                  borderRadius: '8px',
+                  color: isDarkMode ? '#ece5de' : '#8d654c',
+                  fontSize: '12px'
+                }}
+                formatter={(value) => [`${value} / 9`]}
+              />
+              {(selectedGame === 'all' || selectedGame === 'memory') && (
+                <Line
+                  type="monotone"
+                  dataKey="Digit Span"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  dot={{ fill: '#f97316', r: chartData.length === 1 ? 6 : 4 }}
+                  connectNulls
+                  name="Digit Span"
+                />
+              )}
+              {(selectedGame === 'all' || selectedGame === 'attention') && (
+                <Line
+                  type="monotone"
+                  dataKey="Spatial Span"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  dot={{ fill: '#22c55e', r: chartData.length === 1 ? 6 : 4 }}
+                  connectNulls
+                  name="Spatial Span"
                 />
               )}
             </LineChart>

@@ -15,7 +15,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 1) {
     const nervousness = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Person's head with tension */}
         <motion.circle 
           cx="100" cy="90" r="30" 
@@ -94,7 +94,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 2) {
     const worrying = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head */}
         <circle cx="100" cy="85" r="28" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -180,7 +180,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 3) {
     const multiWorry = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - overwhelmed */}
         <circle cx="100" cy="90" r="27" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -246,7 +246,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 4) {
     const tension = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Person trying to relax but can't */}
         <circle cx="100" cy="85" r="26" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -341,7 +341,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 5) {
     const restlessness = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - can't stay still */}
         <motion.circle 
           cx="100" cy="85" r="26" 
@@ -458,7 +458,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 6) {
     const irritability = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Head - irritated */}
         <circle cx="100" cy="88" r="28" fill={baseColor} fillOpacity="0.2" stroke={baseColor} strokeWidth="2.5" />
         
@@ -553,7 +553,7 @@ export function GAD7Illustration({ questionNumber, sliderPercentage, isDarkMode 
   if (questionNumber === 7) {
     const fear = sliderPercentage;
     return (
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+      <svg width="100%" height="100%" viewBox="0 0 200 200" fill="none">
         {/* Person looking afraid/worried */}
         <motion.circle 
           cx="100" cy="90" r="28" 

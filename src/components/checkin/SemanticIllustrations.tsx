@@ -18,8 +18,8 @@ export function SemanticIllustration({
   // Use sketch illustrations for PHQ-9 questions (1-9)
   if (questionNumber >= 1 && questionNumber <= 9) {
     return (
-      <div className="w-full h-full flex items-center justify-center p-4">
-        <div className="w-48 h-48">
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="w-full h-full">
           <PHQ9SketchIllustration 
             questionNumber={questionNumber}
             sliderPercentage={sliderPercentage}
