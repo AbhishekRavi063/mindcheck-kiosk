@@ -114,6 +114,8 @@ Firebase is live and used for two things:
 
 Firebase config is read from `VITE_FIREBASE_*` env vars (set in `.env`; values are safe to expose — security enforced by Firestore Rules).
 
+**Privacy policy note:** `PRIVACY_POLICY.md` (root) states "no data ever leaves your device by default" and "no data is shared with Google for users who do not enable Cloud Backup." This is not fully accurate: `signInAnonymously(auth)` fires eagerly on every PWA session for all users (`firebase.ts` line 22), meaning Firebase Auth receives a network request and creates/maintains an anonymous user record regardless of Cloud Backup consent. The policy needs amendment to reflect this.
+
 ### Supabase (Disabled)
 
 `src/supabase/` and `src/utils/dataSync.ts` exist but cloud sync is hardcoded to `false` — none of this code runs. Project ID `tcnoazrgklhtxxhxszwu`, table `kv_store_d0949dc0` in `src/supabase/info.ts`. Do not re-enable without reviewing privacy implications.
