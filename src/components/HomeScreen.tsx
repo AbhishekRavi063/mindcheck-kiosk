@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Heart, TrendingUp, Calendar, Activity, Gamepad2, BookOpen } from 'lucide-react';
 import { CrisisResourcesModal } from './modals/CrisisResourcesModal';
+import { getSensitiveValueSync, subscribeToSecureVault } from '../utils/secureVault';
 
 interface HomeScreenProps {
   onStartCheckIn: () => void;
@@ -21,25 +22,24 @@ export function HomeScreen({ onStartCheckIn, isDarkMode, onNavigateToTrends, onO
   const [dailyCheckInCompletedCount, setDailyCheckInCompletedCount] = useState(0);
 
   useEffect(() => {
+    const refreshHomeData = () => {
     // Calculate streak
-    const history = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
+    const history = getSensitiveValueSync<any[]>('mindcheck_history', []);
     if (history.length > 0) {
       // Simple streak calculation
-      const today = new Date().toDateString();
-      const lastEntry = new Date(history[history.length - 1].date).toDateString();
       setStreak(history.length);
     }
 
     // Get today's My Day Log completion count
     const today = new Date().toISOString().split('T')[0];
-    const dailyCheckInData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+    const dailyCheckInData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
     if (dailyCheckInData[today]) {
       setDailyCheckInCompletedCount(dailyCheckInData[today].length);
     }
 
     // Get next check-in date
     const prefs = JSON.parse(localStorage.getItem('mindcheck_preferences') || '{"frequency":"weekly"}');
-    const lastAssessment = localStorage.getItem('mindcheck_last_assessment');
+    const lastAssessment = getSensitiveValueSync<string | null>('mindcheck_last_assessment', null);
     
     if (lastAssessment) {
       const lastDate = new Date(lastAssessment);
@@ -69,6 +69,10 @@ export function HomeScreen({ onStartCheckIn, isDarkMode, onNavigateToTrends, onO
       setNextCheckIn('Ready when you are');
       setTodayStatus('ready');
     }
+    };
+
+    refreshHomeData();
+    return subscribeToSecureVault(refreshHomeData);
   }, []);
 
   return (

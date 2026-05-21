@@ -6,6 +6,7 @@ import { DataSyncPreferenceModal } from '../modals/DataSyncPreferenceModal';
 import { emaSections, EMASection } from '../../data/emaQuestions';
 import { saveDayLog, logUserActivity } from '../../utils/firebaseSync';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
+import { getSensitiveValueSync, setSensitiveValue } from '../../utils/secureVault';
 
 interface EMAFlowProps {
   onComplete: (answers: any) => void;
@@ -37,7 +38,7 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
     if (selectedSection && currentQuestion === selectedSection.questions.length - 1) {
       // Section complete - save and return to selector
       const today = new Date().toISOString().split('T')[0];
-      const existingData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+      const existingData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
       
       if (!existingData[today]) {
         existingData[today] = [];
@@ -55,7 +56,9 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
         timestamp: new Date().toISOString()
       });
 
-      localStorage.setItem('mindcheck_ema_data', JSON.stringify(existingData));
+      setSensitiveValue('mindcheck_ema_data', existingData).catch(error => {
+        console.error('Error saving secure EMA data:', error);
+      });
 
       // Firebase sync
       saveDayLog({ questions, time_of_day: selectedSection.id });

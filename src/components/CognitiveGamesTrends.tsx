@@ -39,16 +39,10 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
       setIsLoading(true);
       try {
         const metrics = await getGameMetrics();
-        console.log('Loaded game metrics:', metrics); // Debug log
-        console.log('Number of metrics:', metrics.length); // Debug log
-        
-        // Ensure all metrics have a timestamp field
         const normalizedMetrics = metrics.map(m => ({
           ...m,
           timestamp: m.timestamp || m.date || m.savedAt
         }));
-        
-        console.log('Normalized metrics:', normalizedMetrics); // Debug log
         setGameMetrics(normalizedMetrics);
       } catch (error) {
         console.error('Error loading game metrics:', error);
@@ -235,6 +229,8 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
 
   const metrics = getAverageMetrics();
   const chartData = getChartData();
+
+  const hasChartMetric = (key: string) => chartData.some(d => (d as any)[key] != null);
 
   if (isLoading) {
     return (
@@ -484,7 +480,7 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                 }}
                 formatter={(value) => [`${value}%`]}
               />
-              {(selectedGame === 'all' || selectedGame === 'gonogo') && (
+              {(selectedGame === 'all' || selectedGame === 'gonogo') && hasChartMetric('Inhibition Score') && (
                 <Line
                   type="monotone"
                   dataKey="Inhibition Score"
@@ -492,10 +488,11 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                   strokeWidth={2}
                   dot={{ fill: '#a855f7', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
+                  isAnimationActive={false}
                   name="Inhibition"
                 />
               )}
-              {(selectedGame === 'all' || selectedGame === 'counting') && (
+              {(selectedGame === 'all' || selectedGame === 'counting') && hasChartMetric('Counting Accuracy') && (
                 <Line
                   type="monotone"
                   dataKey="Counting Accuracy"
@@ -503,6 +500,7 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                   strokeWidth={2}
                   dot={{ fill: '#eab308', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
+                  isAnimationActive={false}
                   name="Counting Accuracy"
                 />
               )}
@@ -549,7 +547,7 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                 }}
                 formatter={(value) => [`${value} / 9`]}
               />
-              {(selectedGame === 'all' || selectedGame === 'memory') && (
+              {(selectedGame === 'all' || selectedGame === 'memory') && hasChartMetric('Digit Span') && (
                 <Line
                   type="monotone"
                   dataKey="Digit Span"
@@ -557,10 +555,11 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                   strokeWidth={2}
                   dot={{ fill: '#f97316', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
+                  isAnimationActive={false}
                   name="Digit Span"
                 />
               )}
-              {(selectedGame === 'all' || selectedGame === 'attention') && (
+              {(selectedGame === 'all' || selectedGame === 'attention') && hasChartMetric('Spatial Span') && (
                 <Line
                   type="monotone"
                   dataKey="Spatial Span"
@@ -568,6 +567,7 @@ export function CognitiveGamesTrends({ isDarkMode, timeRange }: CognitiveGamesTr
                   strokeWidth={2}
                   dot={{ fill: '#22c55e', r: chartData.length === 1 ? 6 : 4 }}
                   connectNulls
+                  isAnimationActive={false}
                   name="Spatial Span"
                 />
               )}

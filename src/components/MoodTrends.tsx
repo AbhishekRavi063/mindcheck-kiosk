@@ -1,6 +1,9 @@
 import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
 import { Smile, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { getJournalEntries } from '../utils/dataSync';
+import { subscribeToSecureVault } from '../utils/secureVault';
 
 interface MoodTrendsProps {
   isDarkMode: boolean;
@@ -8,11 +11,7 @@ interface MoodTrendsProps {
 }
 
 export function MoodTrends({ isDarkMode, timeRange }: MoodTrendsProps) {
-  // Get journal entries from localStorage
-  const getJournalEntries = () => {
-    const entries = localStorage.getItem('mindcheck_journal_entries_all');
-    return entries ? JSON.parse(entries) : [];
-  };
+  const [entries, setEntries] = useState<any[]>([]);
 
   // Get custom emotions
   const getCustomEmotions = () => {
@@ -58,7 +57,6 @@ export function MoodTrends({ isDarkMode, timeRange }: MoodTrendsProps) {
 
   // Process mood data
   const getMoodData = () => {
-    const entries = getJournalEntries();
     const customEmotions = getCustomEmotions();
     const allEmotions = [...defaultEmotions, ...customEmotions];
     const startDate = getDateRange();
@@ -115,6 +113,17 @@ export function MoodTrends({ isDarkMode, timeRange }: MoodTrendsProps) {
       avgIntensity: mood.avgIntensity ? parseFloat(mood.avgIntensity) : 0
     }));
   };
+
+  useEffect(() => {
+    const loadEntries = async () => {
+      setEntries(await getJournalEntries());
+    };
+
+    loadEntries();
+    return subscribeToSecureVault(() => {
+      loadEntries();
+    });
+  }, []);
 
   const moodData = getMoodData();
   const chartData = getChartData();
@@ -217,7 +226,7 @@ export function MoodTrends({ isDarkMode, timeRange }: MoodTrendsProps) {
                       stroke={isDarkMode ? '#ece5de50' : '#8d654c50'}
                       tick={{ fill: isDarkMode ? '#ece5de80' : '#8d654c80', fontSize: 12 }}
                     />
-                    <Bar dataKey="count" fill="#ffb757" radius={[8, 8, 0, 0]} barSize={60} />
+                    <Bar dataKey="count" fill="#ffb757" radius={[8, 8, 0, 0]} barSize={60} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

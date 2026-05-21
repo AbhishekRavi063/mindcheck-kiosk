@@ -10,9 +10,15 @@ import { GamesScreen } from './components/GamesScreen';
 import { JournalPrompt } from './components/checkin/JournalPrompt';
 import { JournalEntriesScreen } from './components/JournalEntriesScreen';
 import { JournalEntryDetail } from './components/JournalEntryDetail';
-import { saveDayLog, saveJournalEntry, getUserId } from './utils/dataSync';
+import { saveDayLog, getUserId } from './utils/dataSync';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
 import { APP_VERSION } from './utils/appConfig';
+import {
+  getSensitiveValueSync,
+  initializeVault,
+  migrateLegacySensitiveData,
+  setSensitiveValue,
+} from './utils/secureVault';
 
 interface JournalEntry {
   id: string;
@@ -29,6 +35,8 @@ interface JournalEntry {
 export type TabType = 'home' | 'checkin' | 'trends' | 'profile' | 'journal-entries';
 
 export default function App() {
+  const [vaultStatus, setVaultStatus] = useState<'checking' | 'ready'>('checking');
+  const [vaultError, setVaultError] = useState('');
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [currentTab, setCurrentTab] = useState<TabType>('home');
   const [isInCheckIn, setIsInCheckIn] = useState(false);
@@ -42,6 +50,24 @@ export default function App() {
   const [trendsRefreshKey, setTrendsRefreshKey] = useState(0);
 
   useEffect(() => {
+    const bootstrapVault = async () => {
+      try {
+        await initializeVault();
+        await migrateLegacySensitiveData();
+        setVaultStatus('ready');
+      } catch (error) {
+        console.error('Failed to initialize secure vault:', error);
+        setVaultError('Secure storage could not be initialized in this browser.');
+        setVaultStatus('ready');
+      }
+    };
+
+    bootstrapVault();
+  }, []);
+
+  useEffect(() => {
+    if (vaultStatus !== 'ready') return;
+
     logUserActivity('app_open');
     flushOfflineQueue();
 
@@ -64,9 +90,8 @@ export default function App() {
       const dedupeVersion = APP_VERSION;
       const alreadyDeduped = localStorage.getItem('mindcheck_dedupe_done');
       if (alreadyDeduped !== dedupeVersion) {
-        const raw = localStorage.getItem('mindcheck_journal_entries_all');
-        if (raw) {
-          const entries = JSON.parse(raw);
+        const entries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
+        if (entries.length > 0) {
           const seen = new Set<string>();
           const deduped = entries.filter((e: any) => {
             const key = `${(e.entry || '').trim()}-${e.date || ''}`;
@@ -75,7 +100,9 @@ export default function App() {
             return true;
           });
           if (deduped.length !== entries.length) {
-            localStorage.setItem('mindcheck_journal_entries_all', JSON.stringify(deduped));
+            setSensitiveValue('mindcheck_journal_entries_all', deduped).catch((error) => {
+              console.error('Could not write deduplicated journal entries:', error);
+            });
           }
         }
         localStorage.setItem('mindcheck_dedupe_done', dedupeVersion);
@@ -83,7 +110,7 @@ export default function App() {
     } catch (e) {
       console.error('Deduplication failed:', e);
     }
-  }, []);
+  }, [vaultStatus]);
 
   useEffect(() => {
     // Apply dark mode to document
@@ -145,7 +172,7 @@ export default function App() {
   const handleDailyCheckInComplete = (dailyCheckInData: any) => {
     // Save My Day Log data
     const today = new Date().toISOString().split('T')[0];
-    const existingData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+    const existingData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
     
     if (!existingData[today]) {
       existingData[today] = [];
@@ -158,7 +185,9 @@ export default function App() {
     
     existingData[today].push(newEntry);
     
-    localStorage.setItem('mindcheck_ema_data', JSON.stringify(existingData));
+    setSensitiveValue('mindcheck_ema_data', existingData).catch(error => {
+      console.error('Error saving secure day log:', error);
+    });
     
     // Save to backend with date included
     saveDayLog({ ...newEntry, date: today }).catch(error => {
@@ -193,41 +222,38 @@ export default function App() {
     
     // Update hashtag counts
     try {
-      const hashtagCount = JSON.parse(localStorage.getItem('mindcheck_hashtag_count') || '{}');
+      const hashtagCount = getSensitiveValueSync<Record<string, number>>('mindcheck_hashtag_count', {});
       hashtags.forEach(tag => {
         hashtagCount[tag] = (hashtagCount[tag] || 0) + 1;
       });
-      localStorage.setItem('mindcheck_hashtag_count', JSON.stringify(hashtagCount));
+      setSensitiveValue('mindcheck_hashtag_count', hashtagCount).catch(error => {
+        console.error('Error saving hashtag counts:', error);
+      });
     } catch (e) {
       console.error('Error saving hashtag counts:', e);
     }
     
-    // Save to localStorage directly with try-catch to prevent white screen crash
+    // Save to secure vault directly with try-catch to prevent white screen crash
     try {
-      const allEntries = JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]');
+      const allEntries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
       const alreadySaved = allEntries.some((e: any) => e.id === newEntry.id);
       if (!alreadySaved) {
         allEntries.unshift(newEntry);
-        localStorage.setItem('mindcheck_journal_entries_all', JSON.stringify(allEntries));
+        await setSensitiveValue('mindcheck_journal_entries_all', allEntries);
       }
     } catch (e) {
-      console.error('Error saving journal to localStorage:', e);
-      // If localStorage is full, try saving without media to prevent data loss
+      console.error('Error saving journal to secure vault:', e);
+      // If the media payload fails, retry without media to prevent data loss
       try {
         const entryWithoutMedia = { ...newEntry, media: null };
-        const allEntries = JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]');
+        const allEntries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
         allEntries.unshift(entryWithoutMedia);
-        localStorage.setItem('mindcheck_journal_entries_all', JSON.stringify(allEntries));
+        await setSensitiveValue('mindcheck_journal_entries_all', allEntries);
       } catch (e2) {
         console.error('Critical: Could not save journal entry at all:', e2);
       }
     }
     
-    // Also try backend save (fire and forget)
-    saveJournalEntry(newEntry).catch(error => {
-      console.error('Error saving journal entry to backend:', error);
-    });
-
     // Firebase cloud sync
     const wordCount = entry.trim().split(/\s+/).filter(w => w.length > 0).length;
     saveJournal({
@@ -262,12 +288,27 @@ export default function App() {
     localStorage.setItem('mindcheck_dark_mode', String(newMode));
   };
 
+  if (vaultStatus === 'checking') {
+    return (
+      <div className="min-h-screen bg-[#ece5de] flex items-center justify-center p-6">
+        <p className="text-[#8d654c] text-sm">Preparing secure storage...</p>
+      </div>
+    );
+  }
+
   if (!hasOnboarded) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} onStartCheckIn={handleStartCheckIn} />;
   }
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'}`}>
+      {vaultError && (
+        <div className="max-w-[390px] mx-auto px-4 pt-4">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {vaultError}
+          </div>
+        </div>
+      )}
       {/* Mobile App Container */}
       <div className={`max-w-[390px] mx-auto min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} relative pb-20`}>
         {/* Screen Content */}
