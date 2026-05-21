@@ -127,10 +127,11 @@ function InterestSketch({ sliderPercentage, baseColor, accentColor }: any) {
           strokeLinecap="round"
         />
         <motion.path
+          d="M 80 105 L 70 120"
           animate={{
             d: happiness > 0.5
-              ? "M 80 105 L 65 115"  // Active arm
-              : "M 80 105 L 70 120"  // Drooping arm
+              ? "M 80 105 L 65 115"
+              : "M 80 105 L 70 120"
           }}
           stroke={baseColor}
           strokeWidth="3"
@@ -167,7 +168,7 @@ function MoodSketch({ sliderPercentage, baseColor, accentColor }: any) {
   return (
     <svg viewBox="0 0 200 200" className="w-full h-full">
       {/* Sun (fades out) */}
-      <motion.g animate={{ opacity: sunOpacity, scale: sunOpacity }}>
+      <motion.g initial={{ opacity: 1, scale: 1 }} animate={{ opacity: sunOpacity, scale: sunOpacity }}>
         <circle cx="150" cy="50" r="12" fill={accentColor} />
         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
           <line
@@ -206,11 +207,12 @@ function MoodSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="80" cy="90" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: happiness > 0.7 
+        <motion.path
+          d="M 72 97 L 88 97"
+          animate={{
+            d: happiness > 0.7
               ? "M 72 95 Q 80 100 88 95"
-              : happiness > 0.3 
+              : happiness > 0.3
                 ? "M 72 97 L 88 97"
                 : "M 72 100 Q 80 95 88 100"
           }}
@@ -246,6 +248,7 @@ function MoodSketch({ sliderPercentage, baseColor, accentColor }: any) {
       <motion.path
         d="M 100 100 L 103 97 Q 107 93 110 97 Q 113 100 110 103 L 100 113 L 90 103 Q 87 100 90 97 Q 93 93 97 97 L 100 100 Z"
         fill={accentColor}
+        initial={{ opacity: 1 }}
         animate={{ opacity: sunOpacity, scale: sunOpacity > 0.7 ? [1, 1.2, 1] : sunOpacity }}
         transition={{ repeat: sunOpacity > 0.7 ? Infinity : 0, duration: 1.5 }}
       />
@@ -262,7 +265,7 @@ function SleepSketch({ sliderPercentage, baseColor, accentColor }: any) {
   return (
     <svg viewBox="0 0 200 200" className="w-full h-full">
       {/* Moon and stars */}
-      <motion.g animate={{ opacity: 0.6 + tiredness * 0.4 }}>
+      <motion.g initial={{ opacity: 0.6 }} animate={{ opacity: 0.6 + tiredness * 0.4 }}>
         <circle cx="160" cy="50" r="15" fill={accentColor} opacity="0.3" />
         <circle cx="165" cy="48" r="15" fill={accentColor} />
         <circle cx="40" cy="60" r="2" fill={accentColor} />
@@ -298,7 +301,7 @@ function SleepSketch({ sliderPercentage, baseColor, accentColor }: any) {
         </motion.g>
 
         {/* Tired eyes (closed) */}
-        <motion.g animate={{ opacity: tiredness }}>
+        <motion.g initial={{ opacity: 0 }} animate={{ opacity: tiredness }}>
           <line x1="83" y1="102" x2="87" y2="102" stroke={baseColor} strokeWidth="2" strokeLinecap="round" />
           <line x1="93" y1="102" x2="97" y2="102" stroke={baseColor} strokeWidth="2" strokeLinecap="round" />
         </motion.g>
@@ -382,11 +385,12 @@ function EnergySketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="70" cy="85" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: energy > 0.6 
+        <motion.path
+          d="M 62 92 L 78 92"
+          animate={{
+            d: energy > 0.6
               ? "M 62 90 Q 70 95 78 90"
-              : energy > 0.3 
+              : energy > 0.3
                 ? "M 62 92 L 78 92"
                 : "M 62 95 Q 70 90 78 95"
           }}
@@ -403,22 +407,23 @@ function EnergySketch({ sliderPercentage, baseColor, accentColor }: any) {
         </motion.g>
 
         {/* Body */}
-        <motion.line 
-          x1="70" y1="103" x2="70" 
+        <motion.line
+          x1="70" y1="103" x2="70" y2="140"
           animate={{ y2: 140 + slump * 0.5 }}
-          stroke={baseColor} 
-          strokeWidth="3" 
+          stroke={baseColor}
+          strokeWidth="3"
           strokeLinecap="round"
         />
 
         {/* Arms - energetic vs drooping */}
         <motion.path
+          d="M 70 110 L 85 120"
           animate={{
             d: energy > 0.6
-              ? "M 70 110 Q 85 105 95 115"  // Arms up/energetic
+              ? "M 70 110 Q 85 105 95 115"
               : energy > 0.3
-                ? "M 70 110 L 85 120"  // Arms down
-                : "M 70 110 L 80 125"  // Arms drooping
+                ? "M 70 110 L 85 120"
+                : "M 70 110 L 80 125"
           }}
           stroke={baseColor}
           strokeWidth="3"
@@ -426,6 +431,7 @@ function EnergySketch({ sliderPercentage, baseColor, accentColor }: any) {
           strokeLinecap="round"
         />
         <motion.path
+          d="M 70 110 L 55 120"
           animate={{
             d: energy > 0.6
               ? "M 70 110 Q 55 105 45 115"
@@ -507,13 +513,14 @@ function AppetiteSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="100" cy="70" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: appetite > 0.6 
-              ? "M 92 75 Q 100 80 108 75"  // Happy/interested
-              : appetite > 0.3 
-                ? "M 92 77 L 108 77"  // Neutral
-                : "M 92 78 Q 100 73 108 78"  // Sad/uninterested
+        <motion.path
+          d="M 92 77 L 108 77"
+          animate={{
+            d: appetite > 0.6
+              ? "M 92 75 Q 100 80 108 75"
+              : appetite > 0.3
+                ? "M 92 77 L 108 77"
+                : "M 92 78 Q 100 73 108 78"
           }}
           stroke={baseColor}
           strokeWidth="2"
@@ -530,10 +537,11 @@ function AppetiteSketch({ sliderPercentage, baseColor, accentColor }: any) {
 
         {/* Arms - reaching for food vs hanging */}
         <motion.path
+          d="M 100 95 L 110 105"
           animate={{
             d: appetite > 0.5
-              ? "M 100 95 Q 110 100 115 110"  // Reaching towards food
-              : "M 100 95 L 110 105"  // Arms down
+              ? "M 100 95 Q 110 100 115 110"
+              : "M 100 95 L 110 105"
           }}
           stroke={baseColor}
           strokeWidth="3"
@@ -541,6 +549,7 @@ function AppetiteSketch({ sliderPercentage, baseColor, accentColor }: any) {
           strokeLinecap="round"
         />
         <motion.path
+          d="M 100 95 L 90 105"
           animate={{
             d: appetite > 0.5
               ? "M 100 95 Q 90 100 85 110"
@@ -627,11 +636,12 @@ function SelfWorthSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="70" cy="90" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: confidence > 0.6 
+        <motion.path
+          d="M 62 97 L 78 97"
+          animate={{
+            d: confidence > 0.6
               ? "M 62 95 Q 70 100 78 95"
-              : confidence > 0.3 
+              : confidence > 0.3
                 ? "M 62 97 L 78 97"
                 : "M 62 100 Q 70 95 78 100"
           }}
@@ -709,13 +719,14 @@ function ConcentrationSketch({ sliderPercentage, baseColor, accentColor }: any) 
         <circle cx="100" cy="75" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face - concentrated vs distracted */}
-        <motion.path 
-          animate={{ 
-            d: focus > 0.6 
-              ? "M 92 80 L 108 80"  // Neutral focus
-              : focus > 0.3 
-                ? "M 92 81 Q 100 78 108 81"  // Slight worry
-                : "M 92 83 Q 100 78 108 83"  // Stressed
+        <motion.path
+          d="M 92 81 Q 100 78 108 81"
+          animate={{
+            d: focus > 0.6
+              ? "M 92 80 L 108 80"
+              : focus > 0.3
+                ? "M 92 81 Q 100 78 108 81"
+                : "M 92 83 Q 100 78 108 83"
           }}
           stroke={baseColor}
           strokeWidth="2"
@@ -736,11 +747,11 @@ function ConcentrationSketch({ sliderPercentage, baseColor, accentColor }: any) 
         </motion.g>
 
         {/* Body leaning towards book */}
-        <motion.line 
-          x1="100" y1="93" 
+        <motion.line
+          x1="100" y1="93" x2="100" y2="120"
           animate={{ x2: 100, y2: 120 - focus * 5 }}
-          stroke={baseColor} 
-          strokeWidth="3" 
+          stroke={baseColor}
+          strokeWidth="3"
           strokeLinecap="round"
         />
 
@@ -806,13 +817,14 @@ function PsychomotorSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="100" cy="80" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: calmness > 0.6 
-              ? "M 92 85 Q 100 88 108 85"  // Calm smile
-              : calmness > 0.3 
-                ? "M 92 86 L 108 86"  // Neutral
-                : "M 92 88 Q 100 85 108 88"  // Anxious
+        <motion.path
+          d="M 92 86 L 108 86"
+          animate={{
+            d: calmness > 0.6
+              ? "M 92 85 Q 100 88 108 85"
+              : calmness > 0.3
+                ? "M 92 86 L 108 86"
+                : "M 92 88 Q 100 85 108 88"
           }}
           stroke={baseColor}
           strokeWidth="2"
@@ -837,10 +849,11 @@ function PsychomotorSketch({ sliderPercentage, baseColor, accentColor }: any) {
 
         {/* Arms - fidgeting vs still */}
         <motion.path
+          d="M 100 105 L 115 120"
           animate={{
             d: restlessness > 0.6
-              ? ["M 100 105 Q 115 100 120 110", "M 100 105 Q 115 110 118 115", "M 100 105 Q 115 105 122 108"]  // Fidgeting
-              : "M 100 105 L 115 120"  // Still
+              ? ["M 100 105 Q 115 100 120 110", "M 100 105 Q 115 110 118 115", "M 100 105 Q 115 105 122 108"]
+              : "M 100 105 L 115 120"
           }}
           transition={{ repeat: restlessness > 0.6 ? Infinity : 0, duration: 0.8 }}
           stroke={baseColor}
@@ -849,6 +862,7 @@ function PsychomotorSketch({ sliderPercentage, baseColor, accentColor }: any) {
           strokeLinecap="round"
         />
         <motion.path
+          d="M 100 105 L 85 120"
           animate={{
             d: restlessness > 0.6
               ? ["M 100 105 Q 85 100 80 110", "M 100 105 Q 85 110 82 115", "M 100 105 Q 85 105 78 108"]
@@ -953,15 +967,16 @@ function CrisisSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="100" cy="90" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face */}
-        <motion.path 
-          animate={{ 
-            d: support > 0.7 
-              ? "M 92 95 Q 100 99 108 95"  // Gentle smile
-              : support > 0.4 
-                ? "M 92 96 L 108 96"  // Neutral
+        <motion.path
+          d="M 92 96 L 108 96"
+          animate={{
+            d: support > 0.7
+              ? "M 92 95 Q 100 99 108 95"
+              : support > 0.4
+                ? "M 92 96 L 108 96"
                 : support > 0.2
-                  ? "M 92 98 Q 100 94 108 98"  // Sad
-                  : "M 92 99 Q 100 94 108 99"  // Very sad
+                  ? "M 92 98 Q 100 94 108 98"
+                  : "M 92 99 Q 100 94 108 99"
           }}
           stroke={baseColor}
           strokeWidth="2"
@@ -986,23 +1001,24 @@ function CrisisSketch({ sliderPercentage, baseColor, accentColor }: any) {
         </motion.g>
 
         {/* Body - hunched when distressed */}
-        <motion.line 
-          x1="100" y1="108" 
-          animate={{ 
+        <motion.line
+          x1="100" y1="108" x2="100" y2="145"
+          animate={{
             x2: 100 + distress * 5,
-            y2: 145 
+            y2: 145
           }}
-          stroke={baseColor} 
-          strokeWidth="3" 
+          stroke={baseColor}
+          strokeWidth="3"
           strokeLinecap="round"
         />
 
         {/* Arms - protective vs open */}
         <motion.path
+          d="M 100 115 L 115 130"
           animate={{
             d: distress > 0.6
-              ? "M 100 115 Q 95 120 93 130"  // Arms crossed/protective
-              : "M 100 115 L 115 130"  // Arms relaxed
+              ? "M 100 115 Q 95 120 93 130"
+              : "M 100 115 L 115 130"
           }}
           stroke={baseColor}
           strokeWidth="3"
@@ -1010,6 +1026,7 @@ function CrisisSketch({ sliderPercentage, baseColor, accentColor }: any) {
           strokeLinecap="round"
         />
         <motion.path
+          d="M 100 115 L 85 130"
           animate={{
             d: distress > 0.6
               ? "M 100 115 Q 105 120 107 130"
