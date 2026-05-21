@@ -77,13 +77,14 @@ function InterestSketch({ sliderPercentage, baseColor, accentColor }: any) {
         <circle cx="80" cy="80" r="18" fill={baseColor} stroke={baseColor} strokeWidth="2.5" />
         
         {/* Face - smile changes to neutral/sad */}
-        <motion.path 
-          animate={{ 
-            d: happiness > 0.7 
-              ? "M 72 85 Q 80 90 88 85"  // Happy smile
-              : happiness > 0.3 
-                ? "M 72 87 L 88 87"  // Neutral line
-                : "M 72 90 Q 80 85 88 90"  // Sad frown
+        <motion.path
+          d="M 72 87 L 88 87"
+          animate={{
+            d: happiness > 0.7
+              ? "M 72 85 Q 80 90 88 85"
+              : happiness > 0.3
+                ? "M 72 87 L 88 87"
+                : "M 72 90 Q 80 85 88 90"
           }}
           stroke={baseColor}
           strokeWidth="2"
@@ -114,10 +115,11 @@ function InterestSketch({ sliderPercentage, baseColor, accentColor }: any) {
 
         {/* Arms - animated based on mood */}
         <motion.path
+          d="M 80 105 Q 90 115 85 125"
           animate={{
             d: happiness > 0.5
-              ? "M 80 105 Q 95 100 110 110"  // Arm reaching up/out
-              : "M 80 105 Q 90 115 85 125"  // Arm hanging down
+              ? "M 80 105 Q 95 100 110 110"
+              : "M 80 105 Q 90 115 85 125"
           }}
           stroke={baseColor}
           strokeWidth="3"
@@ -351,13 +353,15 @@ function EnergySketch({ sliderPercentage, baseColor, accentColor }: any) {
         <rect x="10" y="0" width="10" height="5" fill={baseColor} />
         
         {/* Battery fill */}
-        <motion.rect 
-          x="3" 
-          animate={{ 
+        <motion.rect
+          x="3"
+          y={5 + (50 - 6) * (1 - batteryLevel)}
+          height={(50 - 6) * batteryLevel}
+          animate={{
             y: 5 + (50 - 6) * (1 - batteryLevel),
             height: (50 - 6) * batteryLevel
           }}
-          width="24" 
+          width="24"
           fill={energy > 0.6 ? accentColor : energy > 0.3 ? '#f97316' : '#ef4444'}
           rx="2"
         />
@@ -587,13 +591,14 @@ function SelfWorthSketch({ sliderPercentage, baseColor, accentColor }: any) {
             fill={baseColor}
             animate={{ cy: 90 + posture * 0.5 }}
           />
-          <motion.path 
-            animate={{ 
-              d: confidence > 0.6 
-                ? "M 145 95 Q 150 98 155 95"  // Smile in mirror
-                : confidence > 0.3 
+          <motion.path
+            d="M 145 96 L 155 96"
+            animate={{
+              d: confidence > 0.6
+                ? "M 145 95 Q 150 98 155 95"
+                : confidence > 0.3
                   ? "M 145 96 L 155 96"
-                  : "M 145 98 Q 150 94 155 98"  // Frown in mirror
+                  : "M 145 98 Q 150 94 155 98"
             }}
             stroke={baseColor}
             strokeWidth="1.5"

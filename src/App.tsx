@@ -18,6 +18,7 @@ import {
   initializeVault,
   migrateLegacySensitiveData,
   setSensitiveValue,
+  exportSensitiveData,
 } from './utils/secureVault';
 
 interface JournalEntry {
@@ -63,6 +64,14 @@ export default function App() {
     };
 
     bootstrapVault();
+  }, []);
+
+  // Dev-only helper: access decrypted vault data from the browser console
+  // Usage: window.__vault.export()
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      (window as any).__vault = { export: exportSensitiveData };
+    }
   }, []);
 
   useEffect(() => {

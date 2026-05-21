@@ -5,7 +5,7 @@ import { GameMetrics as GoNoGoMetrics } from '../games/GoNoGoGame';
 import { GameMetrics as AttentionMetrics } from '../games/AttentionGame';
 import { GameMetrics as MemoryMetrics } from '../games/MemoryGame';
 import { GameMetrics as CountingMetrics } from '../games/CountingGame';
-import { saveQuestionnaireResponse, saveGameMetrics } from '../../utils/dataSync';
+import { saveGameMetrics } from '../../utils/dataSync';
 import { calculatePssScore } from '../../utils/pssScore';
 import { calculateRsesScore } from '../../utils/rsesScore';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
@@ -24,6 +24,7 @@ interface CompletionSummaryProps {
   countingMetrics?: CountingMetrics | null;
   journalEntries?: { entry: string, hashtags: string[], emotions: string[], media: { type: 'photo' | 'video', url: string } | null, prompt: string | null, moodIntensities?: { [emotion: string]: number } }[];
   functionalImpairment?: number | null;
+  isFirstCheckIn?: boolean;
   onComplete: () => void;
   isDarkMode?: boolean;
 }
@@ -40,6 +41,7 @@ export function CompletionSummary({
   countingMetrics,
   journalEntries,
   functionalImpairment,
+  isFirstCheckIn = false,
   onComplete,
   isDarkMode = false
 }: CompletionSummaryProps) {
@@ -53,60 +55,41 @@ export function CompletionSummary({
   const rsesScore = calculateRsesScore(rsesAnswers);
 
   useEffect(() => {
-    const persistSummary = async () => {
-      // Save the assessment data to history
-      const history = getSensitiveValueSync<any[]>('mindcheck_history', []);
-      const entry = {
-        timestamp: Date.now(),
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        checkInType: checkInType,
-        phq9Score: phq9Answers.length > 0 ? phq9Score : null,
-        pssScore: pssAnswers.length > 0 ? pssScore : null,
-        rsesScore: rsesAnswers.length > 0 ? rsesScore : null,
-        gad7Score: gad7Answers.length > 0 ? gad7Score : null,
-        phq9Answers: phq9Answers.length > 0 ? phq9Answers : null,
-        pssAnswers: pssAnswers.length > 0 ? pssAnswers : null,
-        rsesAnswers: rsesAnswers.length > 0 ? rsesAnswers : null,
-        gad7Answers: gad7Answers.length > 0 ? gad7Answers : null,
-        functionalImpairment: functionalImpairment ?? null,
-      };
+    // Show sync preference modal after the very first check-in
+    const hasAskedSyncPreference = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
+    if (isFirstCheckIn && !hasAskedSyncPreference && !hasShownModal.current) {
+      setTimeout(() => {
+        setShowSyncPreferenceModal(true);
+        hasShownModal.current = true;
+      }, 2000);
+    }
 
-      const isFirstCheckIn = history.length === 0;
-      const hasAskedSyncPreference = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
-
-      if (isFirstCheckIn && !hasAskedSyncPreference && !hasShownModal.current) {
-        setTimeout(() => {
-          setShowSyncPreferenceModal(true);
-          hasShownModal.current = true;
-        }, 2000);
-      }
-
-      saveQuestionnaireResponse(entry).catch(error => {
-        console.error('Error saving questionnaire response to backend:', error);
+    // Game metrics are also saved by GameScoreScreen on mount; this covers the
+    // edge-case where a game completes but CompletionSummary is the first to run.
+    if (goNoGoMetrics) {
+      saveGameMetrics({ type: 'gonogo', ...goNoGoMetrics, timestamp: new Date().toISOString() }).catch(error => {
+        console.error('Error saving game metrics:', error);
       });
+    }
+    if (attentionMetrics) {
+      saveGameMetrics({ type: 'attention', ...attentionMetrics, timestamp: new Date().toISOString() }).catch(error => {
+        console.error('Error saving game metrics:', error);
+      });
+    }
+    if (memoryMetrics) {
+      saveGameMetrics({ type: 'memory', ...memoryMetrics, timestamp: new Date().toISOString() }).catch(error => {
+        console.error('Error saving game metrics:', error);
+      });
+    }
+    if (countingMetrics) {
+      saveGameMetrics({ type: 'counting', ...countingMetrics, timestamp: new Date().toISOString() }).catch(error => {
+        console.error('Error saving game metrics:', error);
+      });
+    }
 
-      if (goNoGoMetrics) {
-        saveGameMetrics({ type: 'gonogo', ...goNoGoMetrics, timestamp: new Date().toISOString() }).catch(error => {
-          console.error('Error saving game metrics to backend:', error);
-        });
-      }
-      if (attentionMetrics) {
-        saveGameMetrics({ type: 'attention', ...attentionMetrics, timestamp: new Date().toISOString() }).catch(error => {
-          console.error('Error saving game metrics to backend:', error);
-        });
-      }
-      if (memoryMetrics) {
-        saveGameMetrics({ type: 'memory', ...memoryMetrics, timestamp: new Date().toISOString() }).catch(error => {
-          console.error('Error saving game metrics to backend:', error);
-        });
-      }
-      if (countingMetrics) {
-        saveGameMetrics({ type: 'counting', ...countingMetrics, timestamp: new Date().toISOString() }).catch(error => {
-          console.error('Error saving game metrics to backend:', error);
-        });
-      }
-
-      if (journalEntries && journalEntries.length > 0) {
+    // Save journal entries if present
+    if (journalEntries && journalEntries.length > 0) {
+      const saveJournalEntries = async () => {
         for (const journalData of journalEntries) {
           const formattedEntry = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -126,7 +109,7 @@ export function CompletionSummary({
             hashtagCount[tag] = (hashtagCount[tag] || 0) + 1;
           });
           setSensitiveValue('mindcheck_hashtag_count', hashtagCount).catch(error => {
-            console.error('Error saving secure hashtag counts:', error);
+            console.error('Error saving hashtag counts:', error);
           });
 
           try {
@@ -137,7 +120,7 @@ export function CompletionSummary({
               await setSensitiveValue('mindcheck_journal_entries_all', existingEntries);
             }
           } catch (e) {
-            console.error('Error saving journal to secure storage:', e);
+            console.error('Error saving journal entry:', e);
             try {
               const entryWithoutMedia = { ...formattedEntry, media: null };
               const existingEntries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
@@ -148,33 +131,12 @@ export function CompletionSummary({
             }
           }
         }
-      }
+      };
 
-      const now = new Date().toISOString();
-
-      if (checkInType === 'full') {
-        await Promise.all([
-          setSensitiveValue('mindcheck_last_phq9', now),
-          setSensitiveValue('mindcheck_last_pss', now),
-          setSensitiveValue('mindcheck_last_rses', now),
-          setSensitiveValue('mindcheck_last_gad7', now),
-        ]);
-      } else if (checkInType === 'phq9') {
-        await setSensitiveValue('mindcheck_last_phq9', now);
-      } else if (checkInType === 'pss') {
-        await setSensitiveValue('mindcheck_last_pss', now);
-      } else if (checkInType === 'rses') {
-        await setSensitiveValue('mindcheck_last_rses', now);
-      } else if (checkInType === 'gad7') {
-        await setSensitiveValue('mindcheck_last_gad7', now);
-      }
-
-      await setSensitiveValue('mindcheck_last_assessment', now);
-    };
-
-    persistSummary().catch(error => {
-      console.error('Error persisting completion summary:', error);
-    });
+      saveJournalEntries().catch(error => {
+        console.error('Error saving journal entries:', error);
+      });
+    }
   }, []);
 
   const getPhq9Range = (score: number) => {
