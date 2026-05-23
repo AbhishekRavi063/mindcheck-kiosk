@@ -2,7 +2,7 @@
 ## MindCheck â€” Mental Wellness App
 
 **Effective Date:** 10th April 2026  
-**Last Updated:** 6th May 2026
+**Last Updated:** 23rd May 2026
 
 ---
 
@@ -60,10 +60,10 @@ MindCheck offers an optional Cloud Backup feature. If you choose to enable it â€
 
 ### 3.1 Local Storage (All Users)
 
-All data is stored on your device using the device's local storage (WebView localStorage). Your data remains on your device at all times unless you explicitly enable Cloud Backup.
+All health data (self-assessment responses, journal entries, day logs, and game performance) is stored in encrypted local storage on your device. Encryption is applied on-device, meaning your health data is not readable by other apps or websites. Your data remains on your device at all times unless you explicitly enable Cloud Backup.
 
 - **No cloud backup by default:** If you do not enable Cloud Backup, your data never leaves your phone. If you uninstall the app or clear app data, your data will be permanently deleted.
-- **User ID:** A randomly generated anonymous identifier (e.g., `user-1710932000000-abc123`) is created on first use. This ID is stored locally and is not linked to your personal identity.
+- **User ID:** A randomly generated anonymous identifier is created on first use. This ID is stored locally and is not linked to your personal identity.
 
 ### 3.2 Cloud Storage (Opted-In Users Only)
 
@@ -120,7 +120,7 @@ You can also delete all local data by uninstalling the app from your device. Sin
 
 ### 6.1 Local Data
 
-Since locally stored data resides entirely on your device, its security depends primarily on your device's security. We recommend:
+Your health data is encrypted at rest on your device, meaning it is not stored in a readable format by other apps or browser-based access. However, since locally stored data resides entirely on your device, its security depends primarily on your device's security. We recommend:
 
 - Using a screen lock (PIN, pattern, fingerprint, or face unlock) on your device.
 - Keeping your device's operating system updated.
@@ -160,7 +160,7 @@ MindCheck provides users with access to mental health resources, including helpl
 
 - We do not operate, control, or endorse any specific helpline or service.
 - We are not responsible for the availability, accuracy, or quality of these external services.
-- External links (such as YourDOST, Tele MANAS, KIRAN helpline) are subject to those organisations' own privacy policies.
+- External links (such as YourDOST, Treadwill, Tele MANAS, KIRAN, etc. helplines) are subject to those organisations' own privacy policies.
 
 If you are experiencing a medical or mental health emergency, please contact your local emergency services immediately.
 
@@ -170,7 +170,7 @@ If you are experiencing a medical or mental health emergency, please contact you
 
 MindCheck does not integrate with any third-party analytics, advertising, or tracking services. The app does not contain advertisements.
 
-**Firebase (Google LLC):** If you enable Cloud Backup, MindCheck uses Google Firebase Firestore and Firebase Anonymous Authentication to store and manage your anonymized data. Google LLC acts as a data processor on our behalf, providing secure cloud infrastructure. For users who do not enable Cloud Backup, no data is shared with Google or any other third party. For more information on Google's data practices, see [Google's Privacy Policy](https://policies.google.com/privacy).
+**Firebase (Google LLC):** If you enable Cloud Backup, MindCheck uses Google Firebase Firestore and Firebase Anonymous Authentication to store and manage your anonymized data. Google LLC acts as a data processor on our behalf, providing secure cloud infrastructure. For users who do not enable Cloud Backup, no data is shared with Google or any other third party.
 
 External links provided in the Support Resources section are for user convenience only and are subject to those organisations' own privacy policies.
 
