@@ -10,6 +10,7 @@ export const SENSITIVE_KEYS = [
   'mindcheck_game_metrics',
   'mindcheck_journal_entries_all',
   'mindcheck_ema_data',
+  'mindcheck_ema_history',
   'mindcheck_last_phq9',
   'mindcheck_last_pss',
   'mindcheck_last_rses',
