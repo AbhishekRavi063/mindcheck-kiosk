@@ -56,7 +56,10 @@ export async function uploadAllLocalData(): Promise<void> {
   const history: any[] = getSensitiveValueSync('mindcheck_history', []);
   for (const entry of history) {
     const raw = entry.checkInType ?? entry.checkin_type ?? 'full';
-    const checkin_type: 'guided' | 'individual' = raw === 'full' ? 'guided' : 'individual';
+    // 'full' = old combined format; 'phq9'/'gad7'/'pss'/'rses' = new per-questionnaire
+    // format saved by CheckInFlow — all are part of a guided full check-in.
+    const GUIDED_TYPES = new Set(['full', 'phq9', 'gad7', 'pss', 'rses']);
+    const checkin_type: 'guided' | 'individual' = GUIDED_TYPES.has(raw) ? 'guided' : 'individual';
     const ts = String(entry.timestamp ?? Date.now());
 
     type QRow = ['phq9'|'gad7'|'pss'|'rses', number[]|null, number|null];
