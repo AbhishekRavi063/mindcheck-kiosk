@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Heart, Zap, Sparkles, ArrowLeft, Star, Lock, Clock, BookOpen, PenLine, X, Calendar, Brain } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { getSensitiveValueSync, subscribeToSecureVault } from '../../utils/secureVault';
 
 interface CheckInTypeSelectorProps {
   onSelect: (type: 'full' | 'phq9' | 'pss' | 'rses' | 'gad7') => void;
@@ -24,22 +25,29 @@ export function CheckInTypeSelector({ onSelect, isDarkMode = false, onBack, onNa
 
   useEffect(() => {
     const LOCKOUT_DAYS = 14; // Changed to 14 days (2 weeks)
-    const now = new Date();
-    
-    const checkLockStatus = (key: string) => {
-      const lastAttempt = localStorage.getItem(`mindcheck_last_${key}`);
-      if (lastAttempt) {
-        const lastDate = new Date(lastAttempt);
-        const diffMs = now.getTime() - lastDate.getTime();
-        const daysPassed = diffMs / (1000 * 60 * 60 * 24);
-        const daysLeft = Math.ceil(LOCKOUT_DAYS - daysPassed);
-        
-        if (daysPassed < LOCKOUT_DAYS) {
-          return { locked: true, daysLeft };
+
+    const refreshLockStatus = () => {
+      const now = new Date();
+      const checkLockStatus = (key: 'phq9' | 'pss' | 'rses' | 'gad7') => {
+        const storageKey = (
+          key === 'phq9' ? 'mindcheck_last_phq9' :
+          key === 'pss' ? 'mindcheck_last_pss' :
+          key === 'rses' ? 'mindcheck_last_rses' :
+          'mindcheck_last_gad7'
+        );
+        const lastAttempt = getSensitiveValueSync<string | null>(storageKey, null);
+        if (lastAttempt) {
+          const lastDate = new Date(lastAttempt);
+          const diffMs = now.getTime() - lastDate.getTime();
+          const daysPassed = diffMs / (1000 * 60 * 60 * 24);
+          const daysLeft = Math.ceil(LOCKOUT_DAYS - daysPassed);
+
+          if (daysPassed < LOCKOUT_DAYS) {
+            return { locked: true, daysLeft };
+          }
         }
-      }
-      return { locked: false, daysLeft: 0 };
-    };
+        return { locked: false, daysLeft: 0 };
+      };
 
     const phq9Status = checkLockStatus('phq9');
     const pssStatus = checkLockStatus('pss');
@@ -57,6 +65,10 @@ export function CheckInTypeSelector({ onSelect, isDarkMode = false, onBack, onNa
       gad7: gad7Status,
       full: { locked: allLocked, daysLeft: maxDaysLeft }
     });
+    };
+
+    refreshLockStatus();
+    return subscribeToSecureVault(refreshLockStatus);
   }, []);
 
   const handleSelect = (type: 'full' | 'phq9' | 'pss' | 'rses' | 'gad7') => {

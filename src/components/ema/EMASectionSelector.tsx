@@ -3,6 +3,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { EMASection } from '../../data/emaQuestions';
 import { useState, useEffect } from 'react';
 import { PlantGrowth } from './PlantGrowth';
+import { getSensitiveValueSync, subscribeToSecureVault } from '../../utils/secureVault';
 
 interface EMASectionSelectorProps {
   sections: EMASection[];
@@ -22,7 +23,7 @@ export function EMASectionSelector({
   const loadCompletedSections = () => {
     // Get today's completed My Day Log sections
     const today = new Date().toISOString().split('T')[0];
-    const dailyCheckInData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+    const dailyCheckInData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
     if (dailyCheckInData[today]) {
       const completed = dailyCheckInData[today].map((entry: any) => entry.section);
       setCompletedSections(completed);
@@ -39,7 +40,7 @@ export function EMASectionSelector({
       loadCompletedSections();
     };
     
-    window.addEventListener('storage', handleStorageChange);
+    const unsubscribe = subscribeToSecureVault(handleStorageChange);
     
     // Also check on focus/visibility change
     const handleVisibilityChange = () => {
@@ -54,7 +55,7 @@ export function EMASectionSelector({
     const interval = setInterval(loadCompletedSections, 500);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
     };

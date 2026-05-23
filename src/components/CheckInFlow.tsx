@@ -8,9 +8,11 @@ import { AttentionGame, GameMetrics as AttentionMetrics } from './games/Attentio
 import { MemoryGame, GameMetrics as MemoryMetrics } from './games/MemoryGame';
 import { CountingGame, GameMetrics as CountingMetrics } from './games/CountingGame';
 import { phq9Questions, pssQuestions, rsesQuestions, gad7Questions, functionalImpairmentQuestion } from '../data/checkInQuestions';
+import { saveQuestionnaireResponse } from '../utils/dataSync';
 import { saveQuestionnaire, saveGame, saveJournal, logUserActivity } from '../utils/firebaseSync';
 import { calculatePssScore } from '../utils/pssScore';
 import { calculateRsesScore } from '../utils/rsesScore';
+import { getSensitiveValueSync, setSensitiveValue } from '../utils/secureVault';
 import { QuestionnaireScoreScreen } from './checkin/QuestionnaireScoreScreen';
 import { GameScoreScreen } from './checkin/GameScoreScreen';
 import { QuestionScreen } from './checkin/QuestionScreen';
@@ -64,7 +66,52 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
   const [countingMetrics, setCountingMetrics] = useState<CountingMetrics | null>(null);
   
   const [showCrisisResourcesModal, setShowCrisisResourcesModal] = useState(false);
-  
+
+  // Capture whether this is the user's first ever check-in (before any saves happen)
+  const [isFirstCheckIn] = useState(
+    () => getSensitiveValueSync<any[]>('mindcheck_history', []).length === 0
+  );
+
+  // Save a single questionnaire result immediately when its score screen appears
+  const persistQuestionnaireResult = (
+    type: QuestionnaireType,
+    answers: number[],
+    score: number,
+    functionalImpairmentValue: number | null = null,
+  ) => {
+    const now = new Date().toISOString();
+    const entry = {
+      timestamp: Date.now(),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      checkInType: type,
+      phq9Score: type === 'phq9' ? score : null,
+      pssScore: type === 'pss' ? score : null,
+      rsesScore: type === 'rses' ? score : null,
+      gad7Score: type === 'gad7' ? score : null,
+      phq9Answers: type === 'phq9' ? answers : null,
+      pssAnswers: type === 'pss' ? answers : null,
+      rsesAnswers: type === 'rses' ? answers : null,
+      gad7Answers: type === 'gad7' ? answers : null,
+      functionalImpairment: type === 'phq9' ? functionalImpairmentValue : null,
+    };
+
+    saveQuestionnaireResponse(entry).catch(err =>
+      console.error('Error saving questionnaire result:', err)
+    );
+
+    const lastKey =
+      type === 'phq9' ? 'mindcheck_last_phq9' :
+      type === 'pss'  ? 'mindcheck_last_pss'  :
+      type === 'rses' ? 'mindcheck_last_rses' : 'mindcheck_last_gad7';
+
+    setSensitiveValue(lastKey, now).catch(err =>
+      console.error('Error saving last questionnaire timestamp:', err)
+    );
+    setSensitiveValue('mindcheck_last_assessment', now).catch(err =>
+      console.error('Error saving last assessment timestamp:', err)
+    );
+  };
+
   // Track current game type for this questionnaire
   const [currentGameType, setCurrentGameType] = useState<GameType | null>(null);
   
@@ -140,6 +187,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
           individual_question_scores: phq9Answers,
           total_score: phq9Score,
         });
+        persistQuestionnaireResult('phq9', phq9Answers, phq9Score, value);
         logUserActivity('questionnaire_completed', { questionnaire_type: 'phq9' });
         setFlowStep('score');
       }
@@ -157,6 +205,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
             individual_question_scores: newAnswers,
             total_score: pssScore,
           });
+          persistQuestionnaireResult('pss', newAnswers, pssScore);
           logUserActivity('questionnaire_completed', { questionnaire_type: 'pss' });
           setQuestionIndex(0);
           setFlowStep('score');
@@ -176,6 +225,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
             individual_question_scores: newAnswers,
             total_score: rsesScore,
           });
+          persistQuestionnaireResult('rses', newAnswers, rsesScore);
           logUserActivity('questionnaire_completed', { questionnaire_type: 'rses' });
           setQuestionIndex(0);
           setFlowStep('score');
@@ -195,6 +245,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
             individual_question_scores: newAnswers,
             total_score: gad7Score,
           });
+          persistQuestionnaireResult('gad7', newAnswers, gad7Score);
           logUserActivity('questionnaire_completed', { questionnaire_type: 'gad7' });
           setQuestionIndex(0);
           setFlowStep('score');
@@ -337,6 +388,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
         countingMetrics={countingMetrics}
         journalEntries={journalEntries}
         functionalImpairment={functionalAnswer}
+        isFirstCheckIn={isFirstCheckIn}
         onComplete={onComplete}
         isDarkMode={isDarkMode}
       />

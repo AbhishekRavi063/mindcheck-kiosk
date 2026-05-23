@@ -10,6 +10,7 @@ import { CitationsModal } from './modals/CitationsModal';
 import { getUserId } from '../utils/dataSync';
 import { getErrorLogs, clearErrorLogs, ErrorLog } from '../utils/errorLogger';
 import { APP_VERSION } from '../utils/appConfig';
+import { clearSensitiveData, destroyVault, getSensitiveValueSync } from '../utils/secureVault';
 // Browser-native file download for PWA — no Capacitor Filesystem needed
 function browserDownload(content: string, fileName: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
@@ -70,15 +71,15 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
         userId: currentUserId,
         exportDate: new Date().toISOString(),
         appVersion: APP_VERSION,
-        checkInHistory: JSON.parse(localStorage.getItem('mindcheck_history') || '[]'),
-        gameMetrics: JSON.parse(localStorage.getItem('mindcheck_game_metrics') || '[]'),
-        journalEntries: JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]').map((e: any) => ({
+        checkInHistory: getSensitiveValueSync<any[]>('mindcheck_history', []),
+        gameMetrics: getSensitiveValueSync<any[]>('mindcheck_game_metrics', []),
+        journalEntries: getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []).map((e: any) => ({
           ...e,
           userId: e.userId || currentUserId,
           // Strip base64 media from export to keep file small — store only metadata
           media: e.media ? { type: e.media.type, note: 'Image stored on device only' } : null,
         })),
-        emaData: JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}'),
+        emaData: getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {}),
         preferences: JSON.parse(localStorage.getItem('mindcheck_preferences') || '{}'),
       };
 
@@ -329,29 +330,18 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
   };
 
   // Clear only health data — keeps onboarding, preferences, User ID intact
-  const handleClearHealthData = () => {
-    const allHealthKeys = [
-      'mindcheck_history',
-      'mindcheck_last_phq9',
-      'mindcheck_last_pss',
-      'mindcheck_last_rses',
-      'mindcheck_last_gad7',
-      'mindcheck_last_assessment',
-      'mindcheck_game_metrics',
-      'mindcheck_journal_entries_all',
-      'mindcheck_ema_data',
-      'mindcheck_hashtag_count',
-      'mindcheck_sync_preference_asked',
-      'mindcheck_synced_to_backend',
-      'mindcheck_backend_loaded',
-    ];
-    allHealthKeys.forEach(key => localStorage.removeItem(key));
+  const handleClearHealthData = async () => {
+    await clearSensitiveData();
+    localStorage.removeItem('mindcheck_sync_preference_asked');
+    localStorage.removeItem('mindcheck_synced_to_backend');
+    localStorage.removeItem('mindcheck_backend_loaded');
     setShowClearDataModal(false);
     alert('All health data cleared. Your preferences and account are intact.');
   };
 
   // Full reset — clears everything, app restarts like fresh install
-  const handleFullReset = () => {
+  const handleFullReset = async () => {
+    await destroyVault();
     localStorage.clear();
     setShowClearDataModal(false);
     // Reload app to trigger onboarding
@@ -402,13 +392,9 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
 
   
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (confirm('Are you sure you want to clear all your check-in history? This cannot be undone.')) {
-      localStorage.removeItem('mindcheck_history');
-      localStorage.removeItem('mindcheck_last_phq9');
-      localStorage.removeItem('mindcheck_last_pss');
-      localStorage.removeItem('mindcheck_last_rses');
-      localStorage.removeItem('mindcheck_last_assessment');
+      await clearSensitiveData();
       alert('All data has been cleared.');
     }
   };

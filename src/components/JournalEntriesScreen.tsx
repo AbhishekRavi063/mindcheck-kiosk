@@ -4,6 +4,7 @@ import { Search, X, Hash, Calendar, BookOpen, Filter, ChevronRight, Image, Video
 import { BackButton } from './ui/BackButton';
 import clipIcon from 'figma:asset/99d81622330278a46476d86a02b8d7a9b69374d1.png';
 import { getJournalEntries } from '../utils/dataSync';
+import { setSensitiveValue, subscribeToSecureVault } from '../utils/secureVault';
 
 interface JournalEntry {
   id: string;
@@ -90,6 +91,7 @@ export function JournalEntriesScreen({ isDarkMode, onBack, onViewEntry, onStartN
     };
     
     loadEntries();
+    return subscribeToSecureVault(loadEntries);
   }, []);
 
   useEffect(() => {
@@ -132,7 +134,9 @@ export function JournalEntriesScreen({ isDarkMode, onBack, onViewEntry, onStartN
         hashtagCount[tag] = (hashtagCount[tag] || 0) + 1;
       });
     });
-    localStorage.setItem('mindcheck_hashtag_count', JSON.stringify(hashtagCount));
+    setSensitiveValue('mindcheck_hashtag_count', hashtagCount).catch(error => {
+      console.error('Error updating secure hashtag counts:', error);
+    });
   };
 
   const filteredEntries = entries.filter(entry => {

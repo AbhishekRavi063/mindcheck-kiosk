@@ -19,18 +19,12 @@ export function GameScoreScreen({ gameType, metrics, onContinue, isDarkMode = fa
   useEffect(() => {
     const saveMetrics = async () => {
       try {
-        const metricsToSave = { 
-          type: gameType, 
-          ...metrics, 
-          timestamp: new Date().toISOString() 
+        const metricsToSave = {
+          type: gameType,
+          ...metrics,
+          timestamp: new Date().toISOString()
         };
-        console.log('Saving game metrics:', metricsToSave); // Debug log
         await saveGameMetrics(metricsToSave);
-        console.log(`${gameType} game metrics saved successfully`);
-        
-        // Verify save by reading back
-        const savedData = localStorage.getItem('mindcheck_game_metrics');
-        console.log('Current localStorage game metrics:', savedData ? JSON.parse(savedData) : 'No data');
       } catch (error) {
         console.error(`Error saving ${gameType} game metrics:`, error);
       }

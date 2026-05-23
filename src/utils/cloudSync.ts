@@ -1,5 +1,6 @@
 import { db, getAuthUID } from '../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getSensitiveValueSync } from './secureVault';
 
 const SYNC_KEY  = 'mindcheck_cloud_backup_enabled';
 const ASKED_KEY = 'mindcheck_sync_preference_asked';
@@ -52,10 +53,13 @@ export async function uploadAllLocalData(): Promise<void> {
   // mindcheck_history entries are flat: { checkInType, timestamp, phq9Score,
   // phq9Answers, gad7Score, gad7Answers, pssScore, pssAnswers, rsesScore, rsesAnswers }
   // Doc ID = "{timestamp}-{questionnaire_type}" → idempotent upsert.
-  const history: any[] = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
+  const history: any[] = getSensitiveValueSync('mindcheck_history', []);
   for (const entry of history) {
     const raw = entry.checkInType ?? entry.checkin_type ?? 'full';
-    const checkin_type: 'guided' | 'individual' = raw === 'full' ? 'guided' : 'individual';
+    // 'full' = old combined format; 'phq9'/'gad7'/'pss'/'rses' = new per-questionnaire
+    // format saved by CheckInFlow — all are part of a guided full check-in.
+    const GUIDED_TYPES = new Set(['full', 'phq9', 'gad7', 'pss', 'rses']);
+    const checkin_type: 'guided' | 'individual' = GUIDED_TYPES.has(raw) ? 'guided' : 'individual';
     const ts = String(entry.timestamp ?? Date.now());
 
     type QRow = ['phq9'|'gad7'|'pss'|'rses', number[]|null, number|null];
@@ -84,7 +88,7 @@ export async function uploadAllLocalData(): Promise<void> {
   // ── games ─────────────────────────────────────────────────────────────────
   // mindcheck_game_metrics entries are flat: { type, timestamp, userId, ...metrics }
   // Doc ID = "{timestamp}-{type}" → idempotent upsert.
-  const gameMetrics: any[] = JSON.parse(localStorage.getItem('mindcheck_game_metrics') || '[]');
+  const gameMetrics: any[] = getSensitiveValueSync('mindcheck_game_metrics', []);
   for (const m of gameMetrics) {
     const { type, checkin_type: ct, timestamp, userId: _uid, ...metricsFields } = m;
     const ts = String(timestamp ?? Date.now()).replace(/[:.]/g, '-');
@@ -101,7 +105,7 @@ export async function uploadAllLocalData(): Promise<void> {
 
   // ── journal ───────────────────────────────────────────────────────────────
   // Journal entries already have a stable `id` field — use it as doc ID.
-  const journals: any[] = JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]');
+  const journals: any[] = getSensitiveValueSync('mindcheck_journal_entries_all', []);
   for (const j of journals) {
     if (!j.id) continue;
     const wordCount = (j.entry ?? '').trim().split(/\s+/).filter((w: string) => w.length > 0).length;
@@ -127,7 +131,7 @@ export async function uploadAllLocalData(): Promise<void> {
   // ── daylogs ───────────────────────────────────────────────────────────────
   // mindcheck_ema_data: { "2025-01-01": [{ section, questions, ... }] }
   // Doc ID = "{dateKey}-{timeOfDay}" → idempotent upsert.
-  const emaData: Record<string, any[]> = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+  const emaData: Record<string, any[]> = getSensitiveValueSync('mindcheck_ema_data', {});
   for (const [dateKey, sections] of Object.entries(emaData)) {
     for (const section of sections) {
       const timeOfDay = section.section ?? section.time_of_day ?? 'unknown';
