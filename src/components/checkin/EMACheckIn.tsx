@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Check } from 'lucide-react';
+import { getSensitiveValueSync, setSensitiveValue } from '../../utils/secureVault';
 
 interface EMACheckInProps {
   onComplete: (data: { mood: number; stress: number; energy: number }) => void;
@@ -18,13 +19,10 @@ export function EMACheckIn({ onComplete, onBack, isDarkMode }: EMACheckInProps) 
     setSubmitted(true);
     const data = { mood, stress, energy };
     
-    // Save to localStorage
-    const emaHistory = JSON.parse(localStorage.getItem('mindcheck_ema_history') || '[]');
-    emaHistory.push({
-      date: new Date().toISOString(),
-      ...data
-    });
-    localStorage.setItem('mindcheck_ema_history', JSON.stringify(emaHistory));
+    // Save to encrypted vault
+    const emaHistory = getSensitiveValueSync<any[]>('mindcheck_ema_history', []);
+    const updated = [...emaHistory, { date: new Date().toISOString(), ...data }];
+    setSensitiveValue('mindcheck_ema_history', updated).catch(console.error);
 
     setTimeout(() => {
       onComplete(data);
