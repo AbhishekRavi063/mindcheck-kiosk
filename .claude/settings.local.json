@@ -12,7 +12,14 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "PowerShell(Get-Content *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(lsof -ti:3000)",
+      "Bash(python3 -c \"import sys,json; lines=[json.loads\\(l\\) for l in sys.stdin if l.strip\\(\\)]; [print\\(m.get\\('content',''\\)[:500] if isinstance\\(m.get\\('content'\\),'str'\\) else str\\(m.get\\('content',''\\)\\)[:500]\\) for m in lines[-5:] if m.get\\('role'\\)]\")",
+      "Bash(grep -rn \"lossOfCon\\\\|nervousne\\\\|Q100 \\\\${\" src/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -v \"^--$\")",
+      "Bash(python3 -)",
+      "Bash(python3 -c ' *)",
+      "Bash(npm install *)"
     ]
   }
 }

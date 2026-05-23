@@ -3,6 +3,7 @@ import { ArrowLeft, Brain, Gamepad2, Activity, PenLine, Clock, Clipboard, Trendi
 import { useState, useEffect } from 'react';
 import mindHeartLogo from 'figma:asset/7b50bc9b5a475ae25095d66d462c3b7a4e725dc6.png';
 import { CrisisResourcesModal } from './modals/CrisisResourcesModal';
+import { getSensitiveValueSync, subscribeToSecureVault } from '../utils/secureVault';
 
 interface CheckInHubProps {
   isDarkMode?: boolean;
@@ -69,6 +70,7 @@ export function CheckInHub({
   ];
 
   useEffect(() => {
+    const refreshActivity = () => {
     // Set current date
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
@@ -93,23 +95,23 @@ export function CheckInHub({
       const activities = [];
       
       // Check questionnaires
-      const phq9Last = localStorage.getItem('mindcheck_last_phq9');
-      const pssLast = localStorage.getItem('mindcheck_last_pss');
-      const rsesLast = localStorage.getItem('mindcheck_last_rses');
-      const gad7Last = localStorage.getItem('mindcheck_last_gad7');
+      const phq9Last = getSensitiveValueSync<string | null>('mindcheck_last_phq9', null);
+      const pssLast = getSensitiveValueSync<string | null>('mindcheck_last_pss', null);
+      const rsesLast = getSensitiveValueSync<string | null>('mindcheck_last_rses', null);
+      const gad7Last = getSensitiveValueSync<string | null>('mindcheck_last_gad7', null);
       
       if ([phq9Last, pssLast, rsesLast, gad7Last].some(d => d && d.split('T')[0] === dateStr)) {
         activities.push('questionnaire');
       }
       
       // Check day logs
-      const emaData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+      const emaData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
       if (emaData[dateStr]) {
         activities.push('daylog');
       }
       
       // Check journal
-      const journalEntries = JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]');
+      const journalEntries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
       if (journalEntries.some((e: any) => {
         if (!e.timestamp) return false;
         const ts = typeof e.timestamp === 'number' ? new Date(e.timestamp).toISOString() : String(e.timestamp);
@@ -182,10 +184,10 @@ export function CheckInHub({
     setGreeting(randomGreeting);
 
     // Check last questionnaire completion
-    const phq9Last = localStorage.getItem('mindcheck_last_phq9');
-    const pssLast = localStorage.getItem('mindcheck_last_pss');
-    const rsesLast = localStorage.getItem('mindcheck_last_rses');
-    const gad7Last = localStorage.getItem('mindcheck_last_gad7');
+    const phq9Last = getSensitiveValueSync<string | null>('mindcheck_last_phq9', null);
+    const pssLast = getSensitiveValueSync<string | null>('mindcheck_last_pss', null);
+    const rsesLast = getSensitiveValueSync<string | null>('mindcheck_last_rses', null);
+    const gad7Last = getSensitiveValueSync<string | null>('mindcheck_last_gad7', null);
     
     const dates = [phq9Last, pssLast, rsesLast, gad7Last].filter(Boolean).map(d => new Date(d!));
     if (dates.length > 0) {
@@ -194,7 +196,7 @@ export function CheckInHub({
     }
 
     // Check last day log
-    const emaData = JSON.parse(localStorage.getItem('mindcheck_ema_data') || '{}');
+    const emaData = getSensitiveValueSync<Record<string, any[]>>('mindcheck_ema_data', {});
     const allDates = Object.keys(emaData);
     if (allDates.length > 0) {
       const mostRecentDate = allDates.sort().reverse()[0];
@@ -202,11 +204,16 @@ export function CheckInHub({
     }
 
     // Check last journal entry
-    const journalEntries = JSON.parse(localStorage.getItem('mindcheck_journal_entries_all') || '[]');
+    const journalEntries = getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
     if (journalEntries.length > 0) {
       const mostRecent = new Date(journalEntries[0].timestamp);
       setLastJournalDate(getRelativeTime(mostRecent));
     }
+
+    };
+
+    refreshActivity();
+    return subscribeToSecureVault(refreshActivity);
   }, []);
 
   const getRelativeTime = (date: Date): string => {

@@ -1,3 +1,8 @@
+import {
+  appendSensitiveArrayValue,
+  getSensitiveValueSync,
+} from './secureVault';
+
 // Returns the Firebase Anonymous Auth UID — consistent across sessions via Firebase persistence.
 export async function getUserId(): Promise<string> {
   const { getAuthUID } = await import('../firebase');
@@ -9,14 +14,11 @@ export async function getUserId(): Promise<string> {
 export async function saveQuestionnaireResponse(response: any): Promise<void> {
   const userId = await getUserId();
   const tagged = { ...response, userId };
-  const history = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
-  history.push(tagged);
-  localStorage.setItem('mindcheck_history', JSON.stringify(history));
+  await appendSensitiveArrayValue('mindcheck_history', tagged);
 }
 
-export function getQuestionnaireResponses(): any[] {
-  const raw = localStorage.getItem('mindcheck_history');
-  return raw ? JSON.parse(raw) : [];
+export async function getQuestionnaireResponses(): Promise<any[]> {
+  return getSensitiveValueSync<any[]>('mindcheck_history', []);
 }
 
 // ===== GAME METRICS =====
@@ -24,14 +26,11 @@ export function getQuestionnaireResponses(): any[] {
 export async function saveGameMetrics(metrics: any): Promise<void> {
   const userId = await getUserId();
   const tagged = { ...metrics, userId };
-  const history = JSON.parse(localStorage.getItem('mindcheck_game_metrics') || '[]');
-  history.push(tagged);
-  localStorage.setItem('mindcheck_game_metrics', JSON.stringify(history));
+  await appendSensitiveArrayValue('mindcheck_game_metrics', tagged);
 }
 
-export function getGameMetrics(): any[] {
-  const raw = localStorage.getItem('mindcheck_game_metrics');
-  return raw ? JSON.parse(raw) : [];
+export async function getGameMetrics(): Promise<any[]> {
+  return getSensitiveValueSync<any[]>('mindcheck_game_metrics', []);
 }
 
 // ===== DAY LOGS (EMA CHECK-INS) =====
@@ -40,19 +39,12 @@ export async function saveDayLog(_dayLog: any): Promise<void> {
   // EMA data is saved directly by EMA flow components; this is a no-op retained for API compatibility.
 }
 
-export function getDayLogs(): any[] {
-  const raw = localStorage.getItem('mindcheck_ema_data');
-  return raw ? JSON.parse(raw) : [];
+export async function getDayLogs(): Promise<any> {
+  return getSensitiveValueSync<any>('mindcheck_ema_data', {});
 }
 
 // ===== JOURNAL ENTRIES =====
 
-export async function saveJournalEntry(journal: any): Promise<any> {
-  const userId = await getUserId();
-  return { ...journal, userId };
-}
-
-export function getJournalEntries(): any[] {
-  const raw = localStorage.getItem('mindcheck_journal_entries_all');
-  return raw ? JSON.parse(raw) : [];
+export async function getJournalEntries(): Promise<any[]> {
+  return getSensitiveValueSync<any[]>('mindcheck_journal_entries_all', []);
 }

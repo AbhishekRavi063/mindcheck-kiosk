@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { BookOpen, ArrowRight, RefreshCw, X, Check, Sparkles, Hash, Archive, Image, Video, Smile, Bold, Italic, List, ListOrdered, Plus } from 'lucide-react';
 import { getJournalPrompt } from '../../utils/journalPrompts';
 import { BackButton } from '../ui/BackButton';
+import { getSensitiveValueSync, subscribeToSecureVault } from '../../utils/secureVault';
 
 interface JournalPromptProps {
   onComplete: (entry: string, hashtags: string[], emotions: string[], media: { type: 'photo' | 'video', url: string } | null, prompt: string | null, moodIntensities?: { [emotion: string]: number }) => void;
@@ -120,12 +121,12 @@ export function JournalPrompt({ onComplete, onSkip, isDarkMode, onBack, isStanda
     if (savedCustomEmotions) {
       setCustomEmotions(JSON.parse(savedCustomEmotions));
     }
+
+    return subscribeToSecureVault(loadFrequentHashtags);
   }, []);
 
   const loadFrequentHashtags = () => {
-    const hashtagCount: { [key: string]: number } = JSON.parse(
-      localStorage.getItem('mindcheck_hashtag_count') || '{}'
-    );
+    const hashtagCount = getSensitiveValueSync<Record<string, number>>('mindcheck_hashtag_count', {});
     
     // Sort by frequency and get top 10
     const sorted = Object.entries(hashtagCount)

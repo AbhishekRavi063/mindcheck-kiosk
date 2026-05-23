@@ -102,7 +102,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
         <circle cx="93" cy="76" r="3" fill={baseColor} />
         <circle cx="107" cy="76" r="3" fill={baseColor} />
         <motion.path 
-          d="M93 90 Q100 ${85 - lossOfControl * 8} 107 90" 
+          d={`M93 90 Q100 ${85 - lossOfControl * 8} 107 90`}
           stroke={baseColor} 
           strokeWidth="2" 
           fill="none"
@@ -188,7 +188,7 @@ export function PSSIllustration({ questionNumber, sliderPercentage, isDarkMode }
         
         {/* Stressed mouth */}
         <motion.path 
-          d="M90 95 Q100 ${90 + nervousness * 5} 110 95" 
+          d={`M90 95 Q100 ${90 + nervousness * 5} 110 95`}
           stroke={baseColor} 
           strokeWidth="2" 
           fill="none"

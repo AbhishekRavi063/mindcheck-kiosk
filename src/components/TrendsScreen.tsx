@@ -124,6 +124,8 @@ export function TrendsScreen({ isDarkMode, onBack }: TrendsScreenProps) {
 
   const chartData = getFilteredData();
 
+  const hasMetric = (key: string) => chartData.some(d => (d as any)[key] != null);
+
   const getLatestScores = () => {
     if (history.length === 0) return null;
     
@@ -408,42 +410,54 @@ export function TrendsScreen({ isDarkMode, onBack }: TrendsScreenProps) {
                     color: isDarkMode ? '#ece5de' : '#8d654c'
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="Mood"
-                  stroke="#c4856f"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#c4856f', r: 4 }}
-                  name="Mood (PHQ-9)"
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Anxiety"
-                  stroke="#a67c5f"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#a67c5f', r: 4 }}
-                  name="Anxiety (GAD-7)"
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Stress"
-                  stroke="#d4a574"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#d4a574', r: 4 }}
-                  name="Stress (PSS)"
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Self-Esteem"
-                  stroke="#8fbc8f"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#8fbc8f', r: 4 }}
-                  name="Self-Esteem (RSES)"
-                  connectNulls
-                />
+                {hasMetric('Mood') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Mood"
+                    stroke="#c4856f"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#c4856f', r: 4 }}
+                    name="Mood (PHQ-9)"
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+                {hasMetric('Anxiety') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Anxiety"
+                    stroke="#a67c5f"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#a67c5f', r: 4 }}
+                    name="Anxiety (GAD-7)"
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+                {hasMetric('Stress') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Stress"
+                    stroke="#d4a574"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#d4a574', r: 4 }}
+                    name="Stress (PSS)"
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+                {hasMetric('Self-Esteem') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Self-Esteem"
+                    stroke="#8fbc8f"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#8fbc8f', r: 4 }}
+                    name="Self-Esteem (RSES)"
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
 
