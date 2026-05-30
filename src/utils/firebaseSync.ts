@@ -7,7 +7,7 @@ type CheckinType = 'guided' | 'individual';
 type QuestionnaireType = 'phq9' | 'gad7' | 'pss' | 'rses';
 type GameType = 'gonogo' | 'attention' | 'memory' | 'counting';
 type ActivityEvent =
-  | 'app_open' | 'tab_visit'
+  | 'app_open' | 'first_app_open' | 'tab_visit'
   | 'guided_checkin_started' | 'guided_checkin_completed'
   | 'individual_checkin_started' | 'individual_checkin_completed'
   | 'questionnaire_completed' | 'game_played' | 'game_skipped'
@@ -45,6 +45,7 @@ async function write(col: string, data: object): Promise<void> {
   const userId = await getAuthUID();
   await addDoc(collection(db, 'users', userId, col), {
     ...data,
+    date: new Date().toISOString().split('T')[0], // "2026-05-30" — for retention queries
     _ts: serverTimestamp(),
   });
 }

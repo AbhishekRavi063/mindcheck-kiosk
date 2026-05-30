@@ -78,6 +78,14 @@ export default function App() {
     if (vaultStatus !== 'ready') return;
 
     logUserActivity('app_open');
+
+    // Fire once ever — marks when this user first opened the app after enabling sync
+    const hasLoggedFirstOpen = localStorage.getItem('mindcheck_first_open_logged');
+    if (!hasLoggedFirstOpen) {
+      logUserActivity('first_app_open');
+      localStorage.setItem('mindcheck_first_open_logged', 'true');
+    }
+
     flushOfflineQueue();
 
     const onboarded = localStorage.getItem('mindcheck_onboarded');
