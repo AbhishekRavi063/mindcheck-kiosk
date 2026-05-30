@@ -86,6 +86,8 @@ export async function registerFCMToken(userId: string, prefs: NotificationPrefs)
       doc(db, 'users', userId),
       {
         fcmToken: token,
+        fcmRegistered: true,          // permanent flag — stays true even after unregister
+        fcmRegisteredAt: new Date(),  // tracks when they first/last registered
         notificationPrefs: {
           frequency:      prefs.frequency,
           timePreference: prefs.timePreference,
@@ -113,7 +115,8 @@ export async function unregisterFCMToken(userId: string): Promise<void> {
     ]);
     await revokeFCMToken();
     await updateDoc(doc(db, 'users', userId), {
-      fcmToken:                        deleteField(),
+      fcmToken:                        deleteField(), // remove active token
+      // fcmRegistered stays true — permanent record that user ever registered
       'notificationPrefs.reminders':   false,
       updatedAt:                       new Date(),
     });
