@@ -13,7 +13,9 @@ type ActivityEvent =
   | 'questionnaire_completed' | 'game_played' | 'game_skipped'
   | 'journal_written' | 'journal_skipped'
   | 'ema_started' | 'ema_completed'
-  | 'support_resources_viewed';
+  | 'support_resources_viewed'
+  | 'first_consent_shown'
+  | 'cloud_sync_enabled' | 'cloud_sync_disabled';
 
 interface QueueItem {
   col: string;
@@ -164,7 +166,7 @@ export async function logUserActivity(
     game_type?: string;
     questionnaire_type?: string;
     time_of_day?: string;
-    source?: string;
+    source?: 'onboarding' | 'post_checkin' | 'post_ema' | 'profile' | 'standalone';
   }
 ): Promise<void> {
   await execute('activity', { event, metadata: metadata ?? null });

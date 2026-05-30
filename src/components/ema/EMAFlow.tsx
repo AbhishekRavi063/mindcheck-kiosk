@@ -93,6 +93,7 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
     const hasAsked = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
     if (!hasAsked) {
       setShowSyncModal(true);
+      logUserActivity('first_consent_shown', { source: 'post_ema' });
     }
   };
 
@@ -110,12 +111,14 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
           localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
           enableCloudSync();
           uploadAllLocalData();
+          logUserActivity('cloud_sync_enabled', { source: 'post_ema' });
           setShowSyncModal(false);
         }}
         onChooseLocal={() => {
           localStorage.setItem('mindcheck_sync_preference_asked', 'true');
           localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
           disableCloudSync();
+          logUserActivity('cloud_sync_disabled', { source: 'post_ema' });
           setShowSyncModal(false);
         }}
       />

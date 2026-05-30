@@ -11,6 +11,7 @@ import { calculateRsesScore } from '../../utils/rsesScore';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
 import { DataSyncPreferenceModal } from '../modals/DataSyncPreferenceModal';
 import { getSensitiveValueSync, setSensitiveValue } from '../../utils/secureVault';
+import { logUserActivity } from '../../utils/firebaseSync';
 
 interface CompletionSummaryProps {
   checkInType: 'full' | 'phq9' | 'pss' | 'rses' | 'gad7';
@@ -61,6 +62,7 @@ export function CompletionSummary({
       setTimeout(() => {
         setShowSyncPreferenceModal(true);
         hasShownModal.current = true;
+        logUserActivity('first_consent_shown', { source: 'post_checkin' });
       }, 2000);
     }
 
@@ -545,12 +547,14 @@ export function CompletionSummary({
               localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
               enableCloudSync();
               uploadAllLocalData();
+              logUserActivity('cloud_sync_enabled', { source: 'post_checkin' });
               setShowSyncPreferenceModal(false);
               onComplete();
             }}
             onChooseLocal={() => {
               localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
               disableCloudSync();
+              logUserActivity('cloud_sync_disabled', { source: 'post_checkin' });
               setShowSyncPreferenceModal(false);
               onComplete();
             }}

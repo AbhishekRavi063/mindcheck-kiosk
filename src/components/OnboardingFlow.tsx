@@ -12,6 +12,7 @@ import {
 } from '../utils/notificationManager';
 import { getUserId } from '../utils/dataSync';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../utils/cloudSync';
+import { logUserActivity } from '../utils/firebaseSync';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -51,6 +52,7 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
     const hasAskedSync = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
     if (!hasAskedSync) {
       setShowSyncModal(true);
+      logUserActivity('first_consent_shown', { source: 'onboarding' });
     }
 
     if (prefs.reminders) {
@@ -118,12 +120,14 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
                 localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
                 enableCloudSync();
                 uploadAllLocalData();
+                logUserActivity('cloud_sync_enabled', { source: 'onboarding' });
                 setShowSyncModal(false);
               }}
               onChooseLocal={() => {
                 localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
                 localStorage.setItem('mindcheck_sync_preference_asked', 'true');
                 disableCloudSync();
+                logUserActivity('cloud_sync_disabled', { source: 'onboarding' });
                 setShowSyncModal(false);
               }}
             />
