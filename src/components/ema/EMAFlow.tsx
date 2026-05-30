@@ -93,7 +93,7 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
     const hasAsked = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
     if (!hasAsked) {
       setShowSyncModal(true);
-      logUserActivity('first_consent_shown', { source: 'post_ema' });
+      // NOTE: first_consent_shown logged inside onChooseBackend AFTER enableCloudSync()
     }
   };
 
@@ -109,16 +109,17 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
         }}
         onChooseBackend={() => {
           localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
-          enableCloudSync();
-          uploadAllLocalData();
+          enableCloudSync(); // must be FIRST — events below need isSyncEnabled()=true
+          logUserActivity('first_consent_shown', { source: 'post_ema' });
           logUserActivity('cloud_sync_enabled', { source: 'post_ema' });
+          uploadAllLocalData();
           setShowSyncModal(false);
         }}
         onChooseLocal={() => {
+          // Declined — sync never enabled, events dropped by execute()
           localStorage.setItem('mindcheck_sync_preference_asked', 'true');
           localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
           disableCloudSync();
-          logUserActivity('cloud_sync_disabled', { source: 'post_ema' });
           setShowSyncModal(false);
         }}
       />

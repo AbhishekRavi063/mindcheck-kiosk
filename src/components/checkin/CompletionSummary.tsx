@@ -62,7 +62,8 @@ export function CompletionSummary({
       setTimeout(() => {
         setShowSyncPreferenceModal(true);
         hasShownModal.current = true;
-        logUserActivity('first_consent_shown', { source: 'post_checkin' });
+        // NOTE: first_consent_shown logged inside onChooseBackend AFTER enableCloudSync()
+        // Logging here would be dropped — sync not enabled yet
       }, 2000);
     }
 
@@ -538,24 +539,25 @@ export function CompletionSummary({
           <DataSyncPreferenceModal
             isDarkMode={isDarkMode}
             onClose={() => {
-              setShowSyncPreferenceModal(false);
+              // Dismissed — treat as declined, sync not enabled so no Firestore record
               localStorage.setItem('mindcheck_sync_preference_asked', 'true');
               localStorage.setItem('mindcheck_cloud_backup_enabled', 'false');
-              logUserActivity('cloud_sync_disabled', { source: 'post_checkin' });
+              setShowSyncPreferenceModal(false);
               onComplete();
             }}
             onChooseBackend={() => {
               localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
-              enableCloudSync();
-              uploadAllLocalData();
+              enableCloudSync(); // must be FIRST — events below need isSyncEnabled()=true
+              logUserActivity('first_consent_shown', { source: 'post_checkin' });
               logUserActivity('cloud_sync_enabled', { source: 'post_checkin' });
+              uploadAllLocalData();
               setShowSyncPreferenceModal(false);
               onComplete();
             }}
             onChooseLocal={() => {
+              // Declined — sync never enabled, events dropped by execute()
               localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
               disableCloudSync();
-              logUserActivity('cloud_sync_disabled', { source: 'post_checkin' });
               setShowSyncPreferenceModal(false);
               onComplete();
             }}

@@ -46,10 +46,6 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
     saveNotificationPrefs(notifPrefs);
     localStorage.setItem('mindcheck_preferences', JSON.stringify(prefs));
 
-    // Save prefs to Firestore unconditionally (even if FCM permission denied later)
-    // so that 1.3 notification metrics are available for all opted-in users
-    getUserId().then(uid => { if (uid) savePrefsToFirestore(uid, notifPrefs); });
-
     // Advance immediately — never block navigation on a permission prompt
     setStep(3);
 
@@ -57,7 +53,8 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
     const hasAskedSync = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
     if (!hasAskedSync) {
       setShowSyncModal(true);
-      logUserActivity('first_consent_shown', { source: 'onboarding' });
+      // NOTE: first_consent_shown is logged inside onChooseBackend AFTER enableCloudSync()
+      // so it actually reaches Firestore. Logging here would be dropped (sync not enabled yet).
     }
 
     if (prefs.reminders) {
@@ -117,23 +114,26 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
             <DataSyncPreferenceModal
               isDarkMode={false}
               onClose={() => {
+                // Dismissed without choosing — treat as declined, no Firestore record
                 localStorage.setItem('mindcheck_sync_preference_asked', 'true');
                 localStorage.setItem('mindcheck_cloud_backup_enabled', 'false');
-                logUserActivity('cloud_sync_disabled', { source: 'onboarding' });
                 setShowSyncModal(false);
               }}
               onChooseBackend={() => {
                 localStorage.setItem('mindcheck_cloud_backup_preference', 'accepted');
-                enableCloudSync();
-                uploadAllLocalData();
+                enableCloudSync(); // must be FIRST — events below need isSyncEnabled()=true
+                logUserActivity('first_consent_shown', { source: 'onboarding' });
                 logUserActivity('cloud_sync_enabled', { source: 'onboarding' });
+                getUserId().then(uid => { if (uid) savePrefsToFirestore(uid, preferences); });
+                uploadAllLocalData();
                 setShowSyncModal(false);
               }}
               onChooseLocal={() => {
+                // Declined — sync never enabled, events would be dropped by execute()
+                // so we only update localStorage; no Firestore record for declined users (by design)
                 localStorage.setItem('mindcheck_cloud_backup_preference', 'declined');
                 localStorage.setItem('mindcheck_sync_preference_asked', 'true');
                 disableCloudSync();
-                logUserActivity('cloud_sync_disabled', { source: 'onboarding' });
                 setShowSyncModal(false);
               }}
             />

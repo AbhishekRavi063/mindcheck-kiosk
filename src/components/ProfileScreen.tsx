@@ -62,8 +62,8 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
       uploadAllLocalData();
       logUserActivity('cloud_sync_enabled', { source: 'profile' });
     } else {
+      logUserActivity('cloud_sync_disabled', { source: 'profile' }); // BEFORE disable — needs isSyncEnabled()=true
       disableCloudSync();
-      logUserActivity('cloud_sync_disabled', { source: 'profile' });
     }
   };
 
