@@ -11,6 +11,7 @@ import {
   registerFCMToken,
   unregisterFCMToken,
   syncPrefsToFirestore,
+  savePrefsToFirestore,
 } from '../utils/notificationManager';
 import { getUserId } from '../utils/dataSync';
 
@@ -96,8 +97,11 @@ export function NotificationPreferences({ isDarkMode }: Props) {
 
   async function handleRemindersToggle() {
     if (prefs.reminders) {
-      persist({ ...prefs, reminders: false });
+      const next = { ...prefs, reminders: false };
+      persist(next);
       if (userId) unregisterFCMToken(userId);
+      // Save prefs to Firestore so frequency/timePreference stay recorded even with reminders off
+      if (userId) savePrefsToFirestore(userId, next);
       return;
     }
     const result = await requestPermission();
@@ -110,6 +114,9 @@ export function NotificationPreferences({ isDarkMode }: Props) {
       };
       persist(next);
       if (userId) registerFCMToken(userId, next);
+    } else {
+      // Permission denied — still save frequency/timePreference to Firestore
+      if (userId) savePrefsToFirestore(userId, { ...prefs, reminders: false });
     }
   }
 

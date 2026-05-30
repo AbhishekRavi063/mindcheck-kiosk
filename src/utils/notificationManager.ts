@@ -139,3 +139,31 @@ export async function syncPrefsToFirestore(userId: string, prefs: NotificationPr
     // doc may not exist yet — safe to ignore
   }
 }
+
+// Saves notification preferences to Firestore regardless of FCM permission status.
+// Called after onboarding so that frequency/timePreference are always recorded
+// even when the user declines browser notification permission.
+export async function savePrefsToFirestore(userId: string, prefs: NotificationPrefs): Promise<void> {
+  if (!userId) return;
+  try {
+    const [{ db }, { doc, setDoc }] = await Promise.all([
+      import('../firebase'),
+      import('firebase/firestore'),
+    ]);
+    await setDoc(
+      doc(db, 'users', userId),
+      {
+        notificationPrefs: {
+          frequency:      prefs.frequency,
+          timePreference: prefs.timePreference,
+          reminders:      prefs.reminders,
+          lastNotifiedAt: null,
+        },
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+  } catch {
+    // safe to ignore — metrics only
+  }
+}

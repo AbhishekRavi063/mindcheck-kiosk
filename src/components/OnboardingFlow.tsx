@@ -9,6 +9,7 @@ import {
   requestPermission,
   computeNextNotificationAt,
   registerFCMToken,
+  savePrefsToFirestore,
 } from '../utils/notificationManager';
 import { getUserId } from '../utils/dataSync';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../utils/cloudSync';
@@ -44,6 +45,10 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
     // Always persist frequency + timePreference unconditionally so selections are never lost
     saveNotificationPrefs(notifPrefs);
     localStorage.setItem('mindcheck_preferences', JSON.stringify(prefs));
+
+    // Save prefs to Firestore unconditionally (even if FCM permission denied later)
+    // so that 1.3 notification metrics are available for all opted-in users
+    getUserId().then(uid => { if (uid) savePrefsToFirestore(uid, notifPrefs); });
 
     // Advance immediately — never block navigation on a permission prompt
     setStep(3);
@@ -114,6 +119,7 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
               onClose={() => {
                 localStorage.setItem('mindcheck_sync_preference_asked', 'true');
                 localStorage.setItem('mindcheck_cloud_backup_enabled', 'false');
+                logUserActivity('cloud_sync_disabled', { source: 'onboarding' });
                 setShowSyncModal(false);
               }}
               onChooseBackend={() => {

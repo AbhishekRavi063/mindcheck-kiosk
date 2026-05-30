@@ -541,6 +541,7 @@ export function CompletionSummary({
               setShowSyncPreferenceModal(false);
               localStorage.setItem('mindcheck_sync_preference_asked', 'true');
               localStorage.setItem('mindcheck_cloud_backup_enabled', 'false');
+              logUserActivity('cloud_sync_disabled', { source: 'post_checkin' });
               onComplete();
             }}
             onChooseBackend={() => {
