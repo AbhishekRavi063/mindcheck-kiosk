@@ -235,7 +235,6 @@ export async function initializeVault(): Promise<void> {
 
   unlockedKey = key;
   cache = nextCache;
-  console.log('[vault] ready — records in cache:', Object.keys(cache).length);
 }
 
 export function lockVault(): void {
@@ -259,15 +258,13 @@ export function getSensitiveValueSync<T>(key: SensitiveKey, fallback: T): T {
 }
 
 export async function setSensitiveValue<T>(key: SensitiveKey, value: T): Promise<void> {
-  console.log('[vault] setSensitiveValue →', key);
   const cryptoKey = ensureUnlocked();
   cache[key] = value;
   try {
     const encrypted = await encryptValue(cryptoKey, value);
     await setEncryptedRecord(key, encrypted);
-    console.log('[vault] wrote to IDB ✓', key);
   } catch (e) {
-    console.error('[vault] IDB write FAILED for', key, e);
+    console.error('IDB write failed for', key, e);
     throw e;
   }
   notifyStorageChange(key);
