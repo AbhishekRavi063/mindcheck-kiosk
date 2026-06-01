@@ -43,9 +43,13 @@ function enqueue(col: string, data: object): void {
 
 async function write(col: string, data: object): Promise<void> {
   const userId = await getAuthUID();
+  const now = new Date();
   await addDoc(collection(db, 'users', userId, col), {
     ...data,
-    date: new Date().toISOString().split('T')[0], // "2026-05-30" — for retention queries
+    date: now.toISOString().split('T')[0],          // "2026-05-30" — retention queries
+    local_hour: now.getHours(),                     // 0–23 in user's local time
+    day_of_week: now.getDay(),                      // 0 (Sun) – 6 (Sat) in user's local time
+    tz_offset_minutes: -now.getTimezoneOffset(),    // e.g. +330 for IST — to interpret local_hour
     _ts: serverTimestamp(),
   });
 }
