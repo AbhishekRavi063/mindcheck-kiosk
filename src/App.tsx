@@ -12,6 +12,7 @@ import { JournalEntriesScreen } from './components/JournalEntriesScreen';
 import { JournalEntryDetail } from './components/JournalEntryDetail';
 import { saveDayLog, getUserId } from './utils/dataSync';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
+import { initAnalytics, logAppOpen, logTabVisit } from './utils/analytics';
 import { APP_VERSION } from './utils/appConfig';
 import {
   getSensitiveValueSync,
@@ -51,6 +52,8 @@ export default function App() {
   const [trendsRefreshKey, setTrendsRefreshKey] = useState(0);
 
   useEffect(() => {
+    initAnalytics(); // init GA4 on first render
+
     const bootstrapVault = async () => {
       try {
         await initializeVault();
@@ -78,6 +81,7 @@ export default function App() {
     if (vaultStatus !== 'ready') return;
 
     logUserActivity('app_open');
+    logAppOpen(); // GA4
 
     // Fire once ever — marks when this user first opened the app after enabling sync
     const hasLoggedFirstOpen = localStorage.getItem('mindcheck_first_open_logged');
@@ -163,6 +167,7 @@ export default function App() {
   const handleTabChange = (tab: TabType) => {
     if (tab !== currentTab) {
       logUserActivity('tab_visit', { tab });
+      logTabVisit(tab); // GA4
       if (tab === 'checkin') {
         setIsInCheckIn(true);
       }
