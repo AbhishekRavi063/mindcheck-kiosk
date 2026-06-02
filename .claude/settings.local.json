@@ -22,7 +22,13 @@
       "Bash(npm install *)",
       "Bash(vercel env *)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('token present:', bool\\(d.get\\('token'\\)\\)\\)\")",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Read(//Users/abhishekr/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/cef07cde-e0b3-47a7-8eed-fb1b358be783/4215b146-71c1-4254-8943-4dd325a52528/skills/docx/**)",
+      "Bash(extract-text \"/Users/abhishekr/Downloads/MindCheck Metrics Framework.docx\")",
+      "Bash(python scripts/office/unpack.py \"/Users/abhishekr/Downloads/MindCheck Metrics Framework.docx\" /tmp/mindcheck_docx_unpacked/)",
+      "Bash(git fetch *)",
+      "Bash(git config *)",
+      "Bash(npm list *)"
     ]
   }
 }
