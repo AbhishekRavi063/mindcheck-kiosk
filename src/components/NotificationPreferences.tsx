@@ -96,12 +96,14 @@ export function NotificationPreferences({ isDarkMode }: Props) {
   }
 
   async function handleRemindersToggle() {
+    // Always await userId fresh — don't rely on state which may not have resolved yet
+    const uid = userId || await getUserId();
+
     if (prefs.reminders) {
       const next = { ...prefs, reminders: false };
       persist(next);
-      if (userId) unregisterFCMToken(userId);
-      // Save prefs to Firestore so frequency/timePreference stay recorded even with reminders off
-      if (userId) savePrefsToFirestore(userId, next);
+      if (uid) unregisterFCMToken(uid);
+      if (uid) savePrefsToFirestore(uid, next);
       return;
     }
     const result = await requestPermission();
@@ -113,10 +115,9 @@ export function NotificationPreferences({ isDarkMode }: Props) {
         nextNotificationAt: computeNextNotificationAt(prefs),
       };
       persist(next);
-      if (userId) registerFCMToken(userId, next);
+      if (uid) registerFCMToken(uid, next); // uid is guaranteed fresh here
     } else {
-      // Permission denied — still save frequency/timePreference to Firestore
-      if (userId) savePrefsToFirestore(userId, { ...prefs, reminders: false });
+      if (uid) savePrefsToFirestore(uid, { ...prefs, reminders: false });
     }
   }
 
