@@ -19,6 +19,10 @@ npm-debug.log*
 # Firebase
 .firebase/
 firebase-debug.log
+firebase-service-account.json
+
+# Exports / reports
+exports/
 
 # OS
 .DS_Store
