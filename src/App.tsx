@@ -12,7 +12,7 @@ import { JournalEntriesScreen } from './components/JournalEntriesScreen';
 import { JournalEntryDetail } from './components/JournalEntryDetail';
 import { saveDayLog, getUserId } from './utils/dataSync';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
-import { initAnalytics, logAppOpen, logTabVisit } from './utils/analytics';
+import { initAnalytics, logAppOpen, logTabVisit, logJournalWritten } from './utils/analytics';
 import { APP_VERSION } from './utils/appConfig';
 import {
   getSensitiveValueSync,
@@ -290,6 +290,7 @@ export default function App() {
       hashtags: hashtags ?? [],
     });
     logUserActivity('journal_written', { source: 'standalone' });
+    logJournalWritten();
 
     setShowJournal(false);
     

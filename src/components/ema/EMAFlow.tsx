@@ -5,6 +5,7 @@ import { EMASectionComplete } from './EMASectionComplete';
 import { DataSyncPreferenceModal } from '../modals/DataSyncPreferenceModal';
 import { emaSections, EMASection } from '../../data/emaQuestions';
 import { saveDayLog, logUserActivity } from '../../utils/firebaseSync';
+import { logEMACompleted } from '../../utils/analytics';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
 import { getSensitiveValueSync, setSensitiveValue } from '../../utils/secureVault';
 
@@ -63,6 +64,7 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
       // Firebase sync
       saveDayLog({ questions, time_of_day: selectedSection.id });
       logUserActivity('ema_completed', { time_of_day: selectedSection.id });
+      logEMACompleted(selectedSection.id);
 
       // Go back to section selector instead of calling onComplete
       setCompletedSection(selectedSection);

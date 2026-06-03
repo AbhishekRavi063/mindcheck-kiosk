@@ -10,6 +10,7 @@ import { CountingGame, GameMetrics as CountingMetrics } from './games/CountingGa
 import { phq9Questions, pssQuestions, rsesQuestions, gad7Questions, functionalImpairmentQuestion } from '../data/checkInQuestions';
 import { saveQuestionnaireResponse } from '../utils/dataSync';
 import { saveQuestionnaire, saveGame, saveJournal, logUserActivity } from '../utils/firebaseSync';
+import { logCheckinStarted, logCheckinCompleted, logGamePlayed, logGameSkipped, logJournalWritten } from '../utils/analytics';
 import { calculatePssScore } from '../utils/pssScore';
 import { calculateRsesScore } from '../utils/rsesScore';
 import { getSensitiveValueSync, setSensitiveValue } from '../utils/secureVault';
@@ -144,6 +145,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
 
     if (type === 'full') {
       logUserActivity('guided_checkin_started');
+      logCheckinStarted('guided');
       // Randomize the order of questionnaires
       const randomSequence = shuffleArray<QuestionnaireType>(['phq9', 'pss', 'rses', 'gad7']);
       setQuestionnaireSequence(randomSequence);
@@ -155,6 +157,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
       setGameSequence(randomGames);
     } else {
       logUserActivity('individual_checkin_started', { questionnaire_type: type });
+      logCheckinStarted('individual');
       // Single questionnaire
       setQuestionnaireSequence([type]);
       setCurrentQuestionnaireIndex(0);
@@ -277,6 +280,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
       metrics,
     });
     logUserActivity('game_played', { game_type: currentGameType });
+    logGamePlayed(currentGameType);
 
     setFlowStep('game-score');
   };
@@ -288,6 +292,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
       saveGame({ checkin_type: 'guided', game_type: gameType, played: false, metrics: null });
     }
     logUserActivity('game_skipped');
+    logGameSkipped(checkInType === 'full' && gameSequence.length > 0 ? gameSequence[currentQuestionnaireIndex] : 'unknown');
     moveToNextStep();
   };
 
@@ -307,12 +312,15 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
     });
     logUserActivity('journal_written');
     logUserActivity(checkInType === 'full' ? 'guided_checkin_completed' : 'individual_checkin_completed');
+    logJournalWritten();
+    logCheckinCompleted(checkInType === 'full' ? 'guided' : 'individual');
     setFlowStep('complete');
   };
 
   const handleJournalSkip = () => {
     logUserActivity('journal_skipped');
     logUserActivity(checkInType === 'full' ? 'guided_checkin_completed' : 'individual_checkin_completed');
+    logCheckinCompleted(checkInType === 'full' ? 'guided' : 'individual');
     setFlowStep('complete');
   };
 

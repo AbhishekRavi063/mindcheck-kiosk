@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { User, Download, HelpCircle, Shield, Info, ChevronRight, Phone, Moon, Sun, BookOpen, Copy, Database, ExternalLink, Heart, MessageCircle, X, AlertTriangle, Cloud } from 'lucide-react';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../utils/cloudSync';
 import { logUserActivity } from '../utils/firebaseSync';
+import { logCloudSyncEnabled, logCloudSyncDisabled } from '../utils/analytics';
 import { NotificationPreferences } from './NotificationPreferences';
 import { HowItWorksModal } from './modals/HowItWorksModal';
 import { CrisisResourcesModal } from './modals/CrisisResourcesModal';
@@ -61,8 +62,10 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
       enableCloudSync();
       uploadAllLocalData();
       logUserActivity('cloud_sync_enabled', { source: 'profile' });
+      logCloudSyncEnabled();
     } else {
       logUserActivity('cloud_sync_disabled', { source: 'profile' }); // BEFORE disable — needs isSyncEnabled()=true
+      logCloudSyncDisabled();
       disableCloudSync();
     }
   };
