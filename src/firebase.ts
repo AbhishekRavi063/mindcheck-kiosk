@@ -46,9 +46,19 @@ export async function getAuthUID(): Promise<string> {
 // Requests an FCM token using the existing Workbox service worker (sw.js).
 // The Workbox SW includes sw-push.js via importScripts, so it handles push events.
 export async function requestFCMToken(): Promise<string | null> {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('[FCM] serviceWorker or PushManager not supported');
+    return null;
+  }
   try {
-    const swReg = await navigator.serviceWorker.ready;
+    // Timeout after 10s — prevents hanging if SW never becomes ready (e.g. in dev mode)
+    const swReg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Service worker ready timeout')), 10000)
+      ),
+    ]) as ServiceWorkerRegistration;
+
     const messaging = getMessaging(app);
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
