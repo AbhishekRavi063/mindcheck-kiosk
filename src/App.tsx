@@ -12,6 +12,7 @@ import { JournalEntriesScreen } from './components/JournalEntriesScreen';
 import { JournalEntryDetail } from './components/JournalEntryDetail';
 import { saveDayLog, getUserId } from './utils/dataSync';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
+import { savePrefsToFirestore } from './utils/notificationManager';
 import { initAnalytics, logAppOpen, logTabVisit, logJournalWritten } from './utils/analytics';
 import { APP_VERSION } from './utils/appConfig';
 import {
@@ -130,6 +131,34 @@ export default function App() {
       }
     } catch (e) {
       console.error('Deduplication failed:', e);
+    }
+    // Backfill notificationPrefs to Firestore for users who consented to cloud sync
+    // but whose prefs were never written due to stale state / race conditions.
+    // Runs silently in the background — no UI, no retries needed.
+    const cloudSyncEnabled = localStorage.getItem('mindcheck_cloud_backup_enabled') === 'true';
+    if (cloudSyncEnabled) {
+      const raw = localStorage.getItem('mindcheck_preferences');
+      if (raw) {
+        try {
+          const prefs = JSON.parse(raw);
+          if (prefs.frequency || prefs.timePreference) {
+            import('./firebase').then(({ db, getAuthUID }) =>
+              import('firebase/firestore').then(({ doc, getDoc }) =>
+                getAuthUID().then(uid =>
+                  getDoc(doc(db, 'users', uid)).then(snap => {
+                    const data = snap.data();
+                    if (!data?.notificationPrefs?.reminders !== undefined) return; // already set
+                    if (data?.notificationPrefs) return; // already set
+                    savePrefsToFirestore(uid, prefs);
+                  })
+                )
+              )
+            ).catch(() => undefined);
+          }
+        } catch {
+          // malformed localStorage — skip silently
+        }
+      }
     }
   }, [vaultStatus]);
 

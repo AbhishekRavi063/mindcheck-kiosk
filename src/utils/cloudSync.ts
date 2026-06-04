@@ -41,11 +41,32 @@ export async function uploadAllLocalData(): Promise<void> {
   const userId = await getAuthUID();
   const userDoc = (col: string, id: string) => doc(db, 'users', userId, col, id);
 
-  await setDoc(doc(db, 'users', userId), {
+  const userRootFields: Record<string, unknown> = {
     cloudSyncEnabled: true,
     cloudSyncConsentAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  }, { merge: true });
+  };
+
+  // Include notificationPrefs in the root write so it's never silently skipped.
+  // Mirrors the shape written by savePrefsToFirestore in notificationManager.ts.
+  try {
+    const raw = localStorage.getItem('mindcheck_preferences');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p.frequency || p.timePreference) {
+        userRootFields.notificationPrefs = {
+          frequency:      p.frequency      ?? 'weekly',
+          timePreference: p.timePreference ?? 'morning',
+          reminders:      p.reminders      ?? false,
+          lastNotifiedAt: null,
+        };
+      }
+    }
+  } catch {
+    // malformed localStorage — skip notificationPrefs, don't block the upload
+  }
+
+  await setDoc(doc(db, 'users', userId), userRootFields, { merge: true });
 
   const ops: Promise<void>[] = [];
 

@@ -166,7 +166,7 @@ export async function savePrefsToFirestore(userId: string, prefs: NotificationPr
       },
       { merge: true }
     );
-  } catch {
-    // safe to ignore — metrics only
+  } catch (err) {
+    console.error('[notificationManager] savePrefsToFirestore failed:', err);
   }
 }
