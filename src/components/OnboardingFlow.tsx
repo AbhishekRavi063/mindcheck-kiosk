@@ -46,33 +46,41 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
     saveNotificationPrefs(notifPrefs);
     localStorage.setItem('mindcheck_preferences', JSON.stringify(prefs));
 
-    // Advance immediately — never block navigation on a permission prompt
+    // Advance to BaselineScreen — permission is requested there via a direct button tap
+    // DO NOT call requestPermission() here — it fires after setStep() which breaks the
+    // user gesture chain on mobile, causing silent auto-denial by the browser
     setStep(3);
 
     // Show cloud sync consent if the user hasn't seen it yet
     const hasAskedSync = localStorage.getItem('mindcheck_sync_preference_asked') === 'true';
     if (!hasAskedSync) {
       setShowSyncModal(true);
-      // NOTE: first_consent_shown is logged inside onChooseBackend AFTER enableCloudSync()
-      // so it actually reaches Firestore. Logging here would be dropped (sync not enabled yet).
     }
+  };
 
-    if (prefs.reminders) {
-      requestPermission().then(permission => {
-        if (permission === 'granted') {
-          const withSchedule = {
-            ...notifPrefs,
-            nextNotificationAt: computeNextNotificationAt(notifPrefs),
-          };
-          saveNotificationPrefs(withSchedule);
-          // Register FCM token + write prefs to Firestore so Cloud Functions can reach this user
-          getUserId().then(uid => { if (uid) registerFCMToken(uid, withSchedule); });
-        } else {
-          saveNotificationPrefs({ ...notifPrefs, reminders: false });
-        }
-      }).catch(() => {
-        saveNotificationPrefs({ ...notifPrefs, reminders: false });
-      });
+  // Called directly from BaselineScreen's "Allow Notifications" button onClick
+  // MUST be called synchronously within a user gesture — no await before requestPermission()
+  const handleRequestNotificationPermission = async () => {
+    const notifPrefs = {
+      frequency:      preferences.frequency      as 'weekly' | 'twice-weekly' | 'monthly',
+      timePreference: preferences.timePreference as 'morning' | 'afternoon' | 'night',
+      reminders:      preferences.reminders,
+    };
+
+    if (!notifPrefs.reminders) return;
+
+    // requestPermission() is the FIRST thing called — preserves user gesture on mobile
+    const permission = await requestPermission();
+    if (permission === 'granted') {
+      const withSchedule = {
+        ...notifPrefs,
+        nextNotificationAt: computeNextNotificationAt(notifPrefs),
+      };
+      saveNotificationPrefs(withSchedule);
+      const uid = await getUserId();
+      if (uid) registerFCMToken(uid, withSchedule);
+    } else {
+      saveNotificationPrefs({ ...notifPrefs, reminders: false });
     }
   };
 
@@ -109,6 +117,8 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
             onStartNow={handleStartNow}
             onLater={handleLater}
             onBack={handleBaselineBack}
+            onRequestNotificationPermission={handleRequestNotificationPermission}
+            remindersEnabled={preferences.reminders}
           />
           {showSyncModal && (
             <DataSyncPreferenceModal

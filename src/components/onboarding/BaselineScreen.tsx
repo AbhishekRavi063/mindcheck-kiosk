@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, ChevronLeft } from 'lucide-react';
+import { Sparkles, ChevronLeft, Bell, BellOff } from 'lucide-react';
 
 interface BaselineScreenProps {
   onStartNow: () => void;
   onLater: () => void;
   onBack: () => void;
+  onRequestNotificationPermission?: () => Promise<void>;
+  remindersEnabled?: boolean;
 }
 
-export function BaselineScreen({ onStartNow, onLater, onBack }: BaselineScreenProps) {
+export function BaselineScreen({ onStartNow, onLater, onBack, onRequestNotificationPermission, remindersEnabled = false }: BaselineScreenProps) {
+  const [permissionRequested, setPermissionRequested] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
   return (
     <div className="min-h-screen bg-[#ece5de] flex items-center justify-center p-6 relative">
       {/* Back Button */}
@@ -69,6 +74,39 @@ export function BaselineScreen({ onStartNow, onLater, onBack }: BaselineScreenPr
             </div>
           </div>
         </motion.div>
+
+        {/* Allow Notifications button — must be a direct button tap so browser grants permission */}
+        {remindersEnabled && onRequestNotificationPermission && !permissionRequested && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.35 }}
+          >
+            <button
+              onClick={() => {
+                // requestPermission() fires synchronously inside this handler — preserves user gesture
+                onRequestNotificationPermission().then(() => {
+                  setPermissionRequested(true);
+                  setPermissionGranted(Notification.permission === 'granted');
+                });
+              }}
+              className="w-full py-4 bg-white/80 border-2 border-[#ffb757] text-[#8d654c] rounded-2xl font-semibold text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            >
+              <Bell className="w-5 h-5 text-[#ffb757]" />
+              Allow Notifications
+            </button>
+          </motion.div>
+        )}
+
+        {permissionRequested && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={`text-center text-sm py-2 rounded-xl ${permissionGranted ? 'text-green-600 bg-green-50' : 'text-[#8d654c]/60 bg-white/40'}`}
+          >
+            {permissionGranted ? '✅ Notifications enabled' : '🔕 Notifications not enabled — you can change this in Profile later'}
+          </motion.div>
+        )}
 
         {/* CTAs */}
         <motion.div
