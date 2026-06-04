@@ -99,7 +99,7 @@ async function main() {
 
   // ── 2. Users summary CSV ───────────────────────────────────────────────────
   const userLines = [
-    row('uid','consentDate','cloudSyncEnabled','notifReminders','notifFrequency','notifTime','fcmRegistered'),
+    row('uid','consentDate','cloudSyncEnabled','notifReminders','notifFrequency','notifTime','fcmTokenPresent'),
     ...users.map(u => row(
       u.uid,
       fmtDate(u.cloudSyncConsentAt),
@@ -107,7 +107,7 @@ async function main() {
       u.notificationPrefs?.reminders ?? '',
       u.notificationPrefs?.frequency ?? '',
       u.notificationPrefs?.timePreference ?? '',
-      u.fcmRegistered ?? false,
+      !!(u.fcmToken && u.fcmToken.length > 0),
     ))
   ];
   const usersFile = path.join(outDir, `users-${dateTag}.csv`);
