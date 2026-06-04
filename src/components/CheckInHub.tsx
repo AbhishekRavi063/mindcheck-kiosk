@@ -1,9 +1,11 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Brain, Gamepad2, Activity, PenLine, Clock, Clipboard, TrendingUp, BarChart3, Phone, Heart, MessageCircle, ExternalLink, X, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowLeft, Brain, Gamepad2, Activity, PenLine, Clock, Clipboard, TrendingUp, BarChart3, Phone, Heart, MessageCircle, ExternalLink, X, BookOpen, Sparkles, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import mindHeartLogo from 'figma:asset/7b50bc9b5a475ae25095d66d462c3b7a4e725dc6.png';
 import { CrisisResourcesModal } from './modals/CrisisResourcesModal';
 import { getSensitiveValueSync, subscribeToSecureVault } from '../utils/secureVault';
+import { loadNotificationPrefs, requestPermission, computeNextNotificationAt, registerFCMToken, saveNotificationPrefs } from '../utils/notificationManager';
+import { getUserId } from '../utils/dataSync';
 
 interface CheckInHubProps {
   isDarkMode?: boolean;
@@ -35,6 +37,20 @@ export function CheckInHub({
   const [lastDayLogDate, setLastDayLogDate] = useState<string | null>(null);
   const [lastJournalDate, setLastJournalDate] = useState<string | null>(null);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
+
+  // Show banner to existing users who enabled reminders but have no FCM token
+  useEffect(() => {
+    const prefs = loadNotificationPrefs();
+    const alreadyDismissed = localStorage.getItem('mindcheck_notif_banner_dismissed');
+    if (
+      prefs.reminders &&
+      Notification.permission !== 'granted' &&
+      !alreadyDismissed
+    ) {
+      setShowNotifBanner(true);
+    }
+  }, []);
 
   // Wisdom quotes from Zen, Taoism, and Stoicism
   const wisdomQuotes = [
@@ -281,6 +297,48 @@ export function CheckInHub({
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} overflow-y-auto`}>
       <div className="max-w-[390px] mx-auto pt-6 pb-24 px-5 space-y-5">
+        {/* Notification permission banner — for existing users with reminders ON but no FCM token */}
+        {showNotifBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`${isDarkMode ? 'bg-[#ffb757]/20 border-[#ffb757]/40' : 'bg-[#ffb757]/15 border-[#ffb757]/40'} border rounded-2xl p-4 flex items-center gap-3`}
+          >
+            <Bell className="w-5 h-5 text-[#ffb757] flex-shrink-0" />
+            <p className={`text-sm flex-1 ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'}`}>
+              Enable notifications to get your reminders
+            </p>
+            <button
+              onClick={() => {
+                // requestPermission() must be first — preserves user gesture on mobile
+                requestPermission().then(async (permission) => {
+                  if (permission === 'granted') {
+                    const prefs = loadNotificationPrefs();
+                    const withSchedule = { ...prefs, reminders: true, nextNotificationAt: computeNextNotificationAt(prefs) };
+                    saveNotificationPrefs(withSchedule);
+                    const uid = await getUserId();
+                    if (uid) registerFCMToken(uid, withSchedule);
+                  }
+                  setShowNotifBanner(false);
+                  localStorage.setItem('mindcheck_notif_banner_dismissed', 'true');
+                });
+              }}
+              className="text-xs font-semibold text-[#ffb757] bg-[#ffb757]/20 px-3 py-1.5 rounded-xl flex-shrink-0 active:scale-95"
+            >
+              Enable
+            </button>
+            <button
+              onClick={() => {
+                setShowNotifBanner(false);
+                localStorage.setItem('mindcheck_notif_banner_dismissed', 'true');
+              }}
+              className={`${isDarkMode ? 'text-[#ece5de]/40' : 'text-[#8d654c]/40'} flex-shrink-0`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
         {/* Back button (if needed) */}
         {onBack && (
           <button
