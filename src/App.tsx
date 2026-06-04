@@ -93,13 +93,17 @@ export default function App() {
 
     flushOfflineQueue();
 
-    // Backfill notificationPrefs to Firestore for existing users who consented to cloud sync
-    // but never had prefs written (due to auth race condition or silent failures)
-    if (localStorage.getItem('mindcheck_cloud_backup_enabled') === 'true') {
+    // One-time backfill of notificationPrefs to Firestore for existing users who
+    // consented to cloud sync but never had prefs written (auth race condition / silent failures)
+    const prefsBackfilled = localStorage.getItem('mindcheck_prefs_backfilled');
+    if (!prefsBackfilled && localStorage.getItem('mindcheck_cloud_backup_enabled') === 'true') {
       const prefs = loadNotificationPrefs();
       if (prefs.frequency) {
         getUserId().then(uid => {
-          if (uid) savePrefsToFirestore(uid, prefs);
+          if (uid) {
+            savePrefsToFirestore(uid, prefs);
+            localStorage.setItem('mindcheck_prefs_backfilled', 'true');
+          }
         });
       }
     }

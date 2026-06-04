@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, ChevronLeft, Bell, BellOff } from 'lucide-react';
+import { Sparkles, ChevronLeft, Bell } from 'lucide-react';
 
 interface BaselineScreenProps {
   onStartNow: () => void;
