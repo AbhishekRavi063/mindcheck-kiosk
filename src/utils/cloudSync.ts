@@ -41,10 +41,23 @@ export async function uploadAllLocalData(): Promise<void> {
   const userId = await getAuthUID();
   const userDoc = (col: string, id: string) => doc(db, 'users', userId, col, id);
 
+  // Include notificationPrefs as fallback so they're always written even if
+  // savePrefsToFirestore fails or fires before auth resolves
+  const rawPrefs = (() => { try { return JSON.parse(localStorage.getItem('mindcheck_preferences') || '{}'); } catch { return {}; } })();
+  const notifPrefs = (localStorage.getItem('notificationPrefs') ? (() => { try { return JSON.parse(localStorage.getItem('notificationPrefs')!); } catch { return null; } })() : null) ?? rawPrefs;
+
   await setDoc(doc(db, 'users', userId), {
     cloudSyncEnabled: true,
     cloudSyncConsentAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    ...(notifPrefs?.frequency ? {
+      notificationPrefs: {
+        frequency:      notifPrefs.frequency,
+        timePreference: notifPrefs.timePreference,
+        reminders:      notifPrefs.reminders ?? false,
+        lastNotifiedAt: null,
+      }
+    } : {}),
   }, { merge: true });
 
   const ops: Promise<void>[] = [];

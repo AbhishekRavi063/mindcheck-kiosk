@@ -134,7 +134,10 @@ export function OnboardingFlow({ onComplete, onStartCheckIn }: OnboardingFlowPro
                 enableCloudSync(); // must be FIRST — events below need isSyncEnabled()=true
                 logUserActivity('first_consent_shown', { source: 'onboarding' });
                 logUserActivity('cloud_sync_enabled', { source: 'onboarding' });
-                getUserId().then(uid => { if (uid) savePrefsToFirestore(uid, preferences); });
+                // Read from localStorage (written synchronously in handlePreferencesComplete)
+                // not from preferences state which may be stale when this callback fires
+                const savedPrefs = (() => { try { return JSON.parse(localStorage.getItem('mindcheck_preferences') || '{}'); } catch { return preferences; } })();
+                getUserId().then(uid => { if (uid) savePrefsToFirestore(uid, savedPrefs); });
                 uploadAllLocalData();
                 setShowSyncModal(false);
               }}
