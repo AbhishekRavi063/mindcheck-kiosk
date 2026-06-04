@@ -1,5 +1,5 @@
 import { db, getAuthUID } from '../firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getSensitiveValueSync } from './secureVault';
 
 const SYNC_KEY  = 'mindcheck_cloud_backup_enabled';
@@ -46,16 +46,25 @@ export async function uploadAllLocalData(): Promise<void> {
   const rawPrefs = (() => { try { return JSON.parse(localStorage.getItem('mindcheck_preferences') || '{}'); } catch { return {}; } })();
   const notifPrefs = (localStorage.getItem('notificationPrefs') ? (() => { try { return JSON.parse(localStorage.getItem('notificationPrefs')!); } catch { return null; } })() : null) ?? rawPrefs;
 
-  await setDoc(doc(db, 'users', userId), {
+  // Use merge: true but write notificationPrefs fields individually using dot notation
+  // so lastNotifiedAt is never overwritten (it's managed by Cloud Functions)
+  // cloudSyncConsentAt uses setDoc merge so it only writes if not already set via getDoc check
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  const existingData = userSnap.exists() ? userSnap.data() : {};
+
+  await setDoc(userRef, {
     cloudSyncEnabled: true,
-    cloudSyncConsentAt: serverTimestamp(),
+    // Only write consentAt on first enable — preserve original timestamp on re-enable
+    cloudSyncConsentAt: existingData.cloudSyncConsentAt ?? serverTimestamp(),
     updatedAt: serverTimestamp(),
     ...(notifPrefs?.frequency ? {
       notificationPrefs: {
         frequency:      notifPrefs.frequency,
         timePreference: notifPrefs.timePreference,
         reminders:      notifPrefs.reminders ?? false,
-        lastNotifiedAt: null,
+        // Preserve existing lastNotifiedAt — never reset it here
+        lastNotifiedAt: existingData.notificationPrefs?.lastNotifiedAt ?? null,
       }
     } : {}),
   }, { merge: true });
