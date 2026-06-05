@@ -13,6 +13,8 @@ import { saveQuestionnaire, saveGame, saveJournal, logUserActivity } from '../ut
 import { logCheckinStarted, logCheckinCompleted, logGamePlayed, logGameSkipped, logJournalWritten } from '../utils/analytics';
 import { calculatePssScore } from '../utils/pssScore';
 import { calculateRsesScore } from '../utils/rsesScore';
+import { calculatePhq9Score } from '../utils/phq9Score';
+import { calculateGad7Score } from '../utils/gad7Score';
 import { getSensitiveValueSync, setSensitiveValue } from '../utils/secureVault';
 import { QuestionnaireScoreScreen } from './checkin/QuestionnaireScoreScreen';
 import { GameScoreScreen } from './checkin/GameScoreScreen';
@@ -183,7 +185,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
         // Functional impairment question
         setFunctionalAnswer(value);
         setQuestionIndex(0);
-        const phq9Score = phq9Answers.reduce((a, b) => a + b, 0);
+        const phq9Score = calculatePhq9Score(phq9Answers);
         saveQuestionnaire({
           questionnaire_type: 'phq9',
           checkin_type: checkInType === 'full' ? 'guided' : 'individual',
@@ -241,7 +243,7 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
         setQuestionIndex(questionIndex + 1);
 
         if (questionIndex === 6) {
-          const gad7Score = newAnswers.reduce((a, b) => a + b, 0);
+          const gad7Score = calculateGad7Score(newAnswers);
           saveQuestionnaire({
             questionnaire_type: 'gad7',
             checkin_type: checkInType === 'full' ? 'guided' : 'individual',
@@ -343,13 +345,13 @@ export function CheckInFlow({ onComplete, onCancel, isDarkMode, onNavigateToDayL
 
   const getQuestionnaireScore = (type: QuestionnaireType): number => {
     if (type === 'phq9') {
-      return phq9Answers.reduce((a, b) => a + b, 0);
+      return calculatePhq9Score(phq9Answers);
     } else if (type === 'pss') {
       return calculatePssScore(pssAnswers);
     } else if (type === 'rses') {
       return calculateRsesScore(rsesAnswers);
     } else if (type === 'gad7') {
-      return gad7Answers.reduce((a, b) => a + b, 0);
+      return calculateGad7Score(gad7Answers);
     }
     return 0;
   };
