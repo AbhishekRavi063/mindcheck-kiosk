@@ -82,18 +82,17 @@ export async function registerFCMToken(userId: string, prefs: NotificationPrefs)
     ]);
     const token = await requestFCMToken();
     if (!token) return;
+    // Use dot notation to update only specific fields — preserves lastNotifiedAt
+    // which is managed exclusively by Cloud Functions
     await setDoc(
       doc(db, 'users', userId),
       {
-        fcmToken: token,
-        fcmRegistered: true,          // permanent flag — stays true even after unregister
-        fcmRegisteredAt: new Date(),  // tracks when they first/last registered
-        notificationPrefs: {
-          frequency:      prefs.frequency,
-          timePreference: prefs.timePreference,
-          reminders:      true,
-          lastNotifiedAt: null,
-        },
+        fcmToken:        token,
+        fcmRegistered:   true,
+        fcmRegisteredAt: new Date(),
+        'notificationPrefs.frequency':      prefs.frequency,
+        'notificationPrefs.timePreference': prefs.timePreference,
+        'notificationPrefs.reminders':      true,
         updatedAt: new Date(),
       },
       { merge: true }
@@ -153,15 +152,14 @@ export async function savePrefsToFirestore(userId: string, prefs: NotificationPr
       import('../firebase'),
       import('firebase/firestore'),
     ]);
+    // Use dot notation to update only specific fields — preserves lastNotifiedAt
+    // which is managed exclusively by Cloud Functions
     await setDoc(
       doc(db, 'users', userId),
       {
-        notificationPrefs: {
-          frequency:      prefs.frequency,
-          timePreference: prefs.timePreference,
-          reminders:      prefs.reminders,
-          lastNotifiedAt: null,
-        },
+        'notificationPrefs.frequency':      prefs.frequency,
+        'notificationPrefs.timePreference': prefs.timePreference,
+        'notificationPrefs.reminders':      prefs.reminders,
         updatedAt: new Date(),
       },
       { merge: true }

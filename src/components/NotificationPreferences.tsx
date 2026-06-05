@@ -96,18 +96,24 @@ export function NotificationPreferences({ isDarkMode }: Props) {
   }
 
   async function handleRemindersToggle() {
-    // Always await userId fresh — don't rely on state which may not have resolved yet
-    const uid = userId || await getUserId();
-
     if (prefs.reminders) {
+      // Turning OFF — get uid first (no gesture needed for this path)
+      const uid = userId || await getUserId();
       const next = { ...prefs, reminders: false };
       persist(next);
       if (uid) unregisterFCMToken(uid);
       if (uid) savePrefsToFirestore(uid, next);
       return;
     }
+
+    // Turning ON — requestPermission() MUST be first, no await before it
+    // otherwise mobile browsers break the gesture chain and auto-deny
     const result = await requestPermission();
     setPermission(result);
+
+    // Get uid AFTER permission request — safe, gesture chain already resolved
+    const uid = userId || await getUserId();
+
     if (result === 'granted') {
       const next: NotificationPrefs = {
         ...prefs,
@@ -115,7 +121,7 @@ export function NotificationPreferences({ isDarkMode }: Props) {
         nextNotificationAt: computeNextNotificationAt(prefs),
       };
       persist(next);
-      if (uid) registerFCMToken(uid, next); // uid is guaranteed fresh here
+      if (uid) registerFCMToken(uid, next);
     } else {
       if (uid) savePrefsToFirestore(uid, { ...prefs, reminders: false });
     }

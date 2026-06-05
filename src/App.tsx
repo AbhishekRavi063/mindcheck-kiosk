@@ -11,6 +11,7 @@ import { JournalPrompt } from './components/checkin/JournalPrompt';
 import { JournalEntriesScreen } from './components/JournalEntriesScreen';
 import { JournalEntryDetail } from './components/JournalEntryDetail';
 import { saveDayLog, getUserId } from './utils/dataSync';
+import { savePrefsToFirestore, loadNotificationPrefs } from './utils/notificationManager';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
 import { savePrefsToFirestore } from './utils/notificationManager';
 import { initAnalytics, logAppOpen, logTabVisit, logJournalWritten } from './utils/analytics';
@@ -92,6 +93,21 @@ export default function App() {
     }
 
     flushOfflineQueue();
+
+    // One-time backfill of notificationPrefs to Firestore for existing users who
+    // consented to cloud sync but never had prefs written (auth race condition / silent failures)
+    const prefsBackfilled = localStorage.getItem('mindcheck_prefs_backfilled');
+    if (!prefsBackfilled && localStorage.getItem('mindcheck_cloud_backup_enabled') === 'true') {
+      const prefs = loadNotificationPrefs();
+      if (prefs.frequency) {
+        getUserId().then(uid => {
+          if (uid) {
+            savePrefsToFirestore(uid, prefs);
+            localStorage.setItem('mindcheck_prefs_backfilled', 'true');
+          }
+        });
+      }
+    }
 
     const onboarded = localStorage.getItem('mindcheck_onboarded');
     if (onboarded === 'true') {
