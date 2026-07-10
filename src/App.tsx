@@ -13,9 +13,12 @@ import { JournalEntryDetail } from './components/JournalEntryDetail';
 import { saveDayLog, getUserId } from './utils/dataSync';
 import { savePrefsToFirestore, loadNotificationPrefs } from './utils/notificationManager';
 import { saveJournal, logUserActivity, flushOfflineQueue } from './utils/firebaseSync';
-import { savePrefsToFirestore } from './utils/notificationManager';
 import { initAnalytics, logAppOpen, logTabVisit, logJournalWritten } from './utils/analytics';
 import { APP_VERSION } from './utils/appConfig';
+import { LoginScreen } from './components/LoginScreen';
+import { onAuthChange } from './firebase';
+import { syncToKioskDb } from './utils/kioskSync';
+import type { User } from 'firebase/auth';
 import {
   getSensitiveValueSync,
   initializeVault,
@@ -52,6 +55,17 @@ export default function App() {
   const [showJournalDetail, setShowJournalDetail] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [trendsRefreshKey, setTrendsRefreshKey] = useState(0);
+  // Patient auth: 'loading' until Firebase resolves, then a User or null.
+  const [authUser, setAuthUser] = useState<User | null | 'loading'>('loading');
+
+  // Subscribe to login state. On login, mirror local data up to the shared clinic DB.
+  useEffect(() => {
+    const unsub = onAuthChange((user) => {
+      setAuthUser(user);
+      if (user) syncToKioskDb().catch(() => undefined);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     initAnalytics(); // init GA4 on first render
@@ -356,12 +370,17 @@ export default function App() {
     localStorage.setItem('mindcheck_dark_mode', String(newMode));
   };
 
-  if (vaultStatus === 'checking') {
+  if (vaultStatus === 'checking' || authUser === 'loading') {
     return (
       <div className="min-h-screen bg-[#ece5de] flex items-center justify-center p-6">
         <p className="text-[#8d654c] text-sm">Preparing secure storage...</p>
       </div>
     );
+  }
+
+  // Must be logged in with the clinic-issued phone + password before using the app.
+  if (!authUser) {
+    return <LoginScreen isDarkMode={isDarkMode} />;
   }
 
   if (!hasOnboarded) {

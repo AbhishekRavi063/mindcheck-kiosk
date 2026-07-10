@@ -1,16 +1,54 @@
 rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MindCheck's Firestore rules for the SHARED Kiosk project (kiosk-d6c2d).
+//
+// ⚠️ DO NOT PUBLISH THIS FILE STANDALONE TO THE SHARED PROJECT.
+// The shared project has ONE rules file that must ALSO contain the Kiosk's own
+// rules (clients, physicians, participants create/read, sessions, results, users).
+// Publishing this alone would DENY all Kiosk access. Instead, MERGE the
+// `participants/{pid}` + `mc_*` blocks below into the Kiosk's rules file
+// (Kiosk/firebase/firestore.rules) and publish that combined file.
+//
+// This file is the SECURE reference for the patient-side (MindCheck) access.
+// The ownership check matches the Kiosk's actual scheme: the patient's link is
+// users/{uid}.participantId (verified in the Kiosk `documentation` branch). The
+// Kiosk does NOT set authUid on the participant doc, so we key off users/{uid}.
+//
+// Security goals:
+//   • A patient can read/write ONLY their own participant's mc_* data.
+//   • A patient can NEVER change identity fields (clientId, phone, participantId).
+//   • A patient cannot create/delete participant docs (staff/Kiosk does that).
+// ─────────────────────────────────────────────────────────────────────────────
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
-      match /{collection}/{document=**} {
-        allow read, write: if request.auth != null
-                           && request.auth.uid == userId;
-      }
+
+    // True if the caller is the patient linked to this participant record,
+    // i.e. users/{uid}.participantId == pid  (the Kiosk's link scheme).
+    function ownsParticipant(pid) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.participantId
+             == pid;
     }
-    match /{document=**} {
-      allow read, write: if false;
+
+    match /participants/{pid} {
+      // Patient may READ their own participant doc.
+      allow read: if ownsParticipant(pid);
+
+      // Patient may UPDATE their own doc, but NOT the identity fields.
+      allow update: if ownsParticipant(pid)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['clientId', 'phone', 'participantId', 'authUid']);
+
+      // Patient may NOT create or delete participant docs — staff/Kiosk owns that.
+      allow create, delete: if false;
+
+      // Patient owns their MindCheck data subcollections (read + write).
+      match /mc_ema/{doc}     { allow read, write: if ownsParticipant(pid); }
+      match /mc_journal/{doc} { allow read, write: if ownsParticipant(pid); }
+      match /mc_games/{doc}   { allow read, write: if ownsParticipant(pid); }
+      match /mc_summary/{doc} { allow read, write: if ownsParticipant(pid); }
     }
   }
 }
