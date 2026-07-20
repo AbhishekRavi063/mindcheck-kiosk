@@ -58,14 +58,27 @@ export default function App() {
   // Patient auth: 'loading' until Firebase resolves, then a User or null.
   const [authUser, setAuthUser] = useState<User | null | 'loading'>('loading');
 
-  // Subscribe to login state. On login, mirror local data up to the shared clinic DB.
+  // Subscribe to login state.
   useEffect(() => {
-    const unsub = onAuthChange((user) => {
-      setAuthUser(user);
-      if (user) syncToKioskDb().catch(() => undefined);
-    });
+    const unsub = onAuthChange((user) => setAuthUser(user));
     return unsub;
   }, []);
+
+  // Mirror local data up only once BOTH the session and the vault are ready.
+  //
+  // Check-in data lives encrypted in IndexedDB, and getSensitiveValueSync reads
+  // an in-memory cache the vault fills on unlock. Syncing before that returns
+  // the empty fallbacks and uploads nothing — which looks identical to a
+  // patient who has no data, so the clinician sees an empty MindCheck tab.
+  // Firebase resolves a cached session faster than the vault initialises, so
+  // this race is the common case rather than the rare one.
+  useEffect(() => {
+    if (vaultStatus !== 'ready') return;
+    if (!authUser || authUser === 'loading') return;
+    syncToKioskDb().catch((e) => {
+      console.warn('[kioskSync] initial sync failed', e);
+    });
+  }, [authUser, vaultStatus]);
 
   useEffect(() => {
     initAnalytics(); // init GA4 on first render
@@ -216,6 +229,10 @@ export default function App() {
     setCurrentTab('trends');
     setTrendsRefreshKey(prev => prev + 1);
     // Note: Cloud backup preference is now handled in CompletionSummary component
+    // Push to the clinic DB now. Syncing only at login would leave everything
+    // recorded today invisible to the clinician until the patient's next
+    // sign-in, which on a shared kiosk device may be days away or never.
+    syncToKioskDb().catch((e) => console.warn('[kioskSync] sync failed', e));
   };
 
   const handleCheckInCancel = () => {
@@ -266,14 +283,20 @@ export default function App() {
     
     existingData[today].push(newEntry);
     
-    setSensitiveValue('mindcheck_ema_data', existingData).catch(error => {
-      console.error('Error saving secure day log:', error);
-    });
-    
-    // Save to backend with date included
-    saveDayLog({ ...newEntry, date: today }).catch(error => {
-      console.error('Error saving day log:', error);
-    });
+    // Sync follows the VAULT write, not the legacy backend call below.
+    // syncToKioskDb reads what the vault holds, and saveDayLog targets a
+    // `daylogs` collection that does not exist in the clinic project — it
+    // rejects with permission-denied, which would skip the sync entirely if the
+    // two were chained.
+    setSensitiveValue('mindcheck_ema_data', existingData)
+      .then(() => syncToKioskDb())
+      .catch(error => {
+        console.error('Error saving secure day log or syncing:', error);
+      });
+
+    // Legacy MindCheck-standalone backend. Expected to fail against the clinic
+    // project; kept so behaviour is unchanged if MindCheck runs on its own.
+    saveDayLog({ ...newEntry, date: today }).catch(() => undefined);
     
     setShowDailyCheckIn(false);
   };
@@ -352,6 +375,7 @@ export default function App() {
     logJournalWritten();
 
     setShowJournal(false);
+    syncToKioskDb().catch((e) => console.warn('[kioskSync] sync failed', e));
     
     // If viewing journal entries screen, refresh it
     if (currentTab === 'journal-entries') {

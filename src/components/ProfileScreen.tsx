@@ -13,6 +13,8 @@ import { getUserId } from '../utils/dataSync';
 import { getErrorLogs, clearErrorLogs, ErrorLog } from '../utils/errorLogger';
 import { APP_VERSION } from '../utils/appConfig';
 import { clearSensitiveData, destroyVault, getSensitiveValueSync } from '../utils/secureVault';
+import { auth, logout } from '../firebase';
+import { resolveParticipantId, clearParticipantId } from '../utils/patientIdentity';
 // Browser-native file download for PWA — no Capacitor Filesystem needed
 function browserDownload(content: string, fileName: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
@@ -49,6 +51,21 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
 
   const [userId, setUserId] = useState<string>('Loading...');
   const [cloudBackupEnabled, setCloudBackupEnabled] = useState(false);
+
+  // Clinic identity of the signed-in patient, so they can confirm whose account
+  // this device is recording into before entering anything personal.
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    setSignedInEmail(auth.currentUser?.email ?? null);
+    // Falls back to the cached value when offline; null means the account has
+    // no users/{uid}.participantId, i.e. it is not a clinic-linked patient.
+    resolveParticipantId()
+      .then(setParticipantId)
+      .catch(() => setParticipantId(null));
+  }, []);
 
   useEffect(() => {
     getUserId().then(id => setUserId(id));
@@ -405,9 +422,48 @@ export function ProfileScreen({ isDarkMode, onToggleDarkMode }: ProfileScreenPro
     }
   };
 
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      // Drop the cached clinic id too, or the next patient on this shared
+      // device would inherit the previous one.
+      clearParticipantId();
+      await logout();
+    } catch (e) {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-[#1a1410]' : 'bg-[#ece5de]'} overflow-y-auto pb-20`}>
       <div className="p-5 space-y-5">
+        <div className={`rounded-2xl p-4 ${isDarkMode ? 'bg-[#2a211a]' : 'bg-white'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-[#3a2e24]' : 'bg-[#ece5de]'}`}>
+              <User className={`w-5 h-5 ${isDarkMode ? 'text-[#d8c9bb]' : 'text-[#8d654c]'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#3a2e24]'}`}>
+                {participantId ?? 'Not linked to a clinic'}
+              </p>
+              <p className={`text-xs ${isDarkMode ? 'text-[#a8988a]' : 'text-[#8d654c]'}`}>
+                {participantId ? 'Signed in — your clinic ID' : 'Sign out and sign in with your phone number'}
+              </p>
+            </div>
+          </div>
+          {signedInEmail && (
+            <p className={`mt-3 text-[11px] break-all ${isDarkMode ? 'text-[#8a7a6c]' : 'text-[#a08a76]'}`}>
+              {signedInEmail}
+            </p>
+          )}
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className={`mt-3 w-full rounded-xl py-2.5 text-sm font-medium disabled:opacity-50 ${isDarkMode ? 'bg-[#3a2e24] text-[#ece5de]' : 'bg-[#ece5de] text-[#8d654c]'}`}
+          >
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
         {/* Header */}
         <div className="pt-4 pb-2">
           <h1 className={`text-3xl font-semibold ${isDarkMode ? 'text-[#ece5de]' : 'text-[#8d654c]'} mb-1`}>Profile</h1>

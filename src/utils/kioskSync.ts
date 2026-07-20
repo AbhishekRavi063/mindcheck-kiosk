@@ -3,6 +3,7 @@
 // subcollections. The Kiosk (clinician view) reads these back.
 //
 //   participants/{participantId}
+//     ├─ mc_questionnaires/{timestamp}   (PHQ-9 / GAD-7 / PSS / RSES)
 //     ├─ mc_ema/{YYYY-MM-DD_timeOfDay}
 //     ├─ mc_journal/{entryId}
 //     ├─ mc_games/{timestamp-type}
@@ -64,6 +65,42 @@ export async function syncToKioskDb(): Promise<void> {
         prompt_shown: j.prompt ?? null,
         has_image: !!j.media,
         word_count: wordCount(j.entry ?? ''),
+        _ts: serverTimestamp(),
+      }, { merge: true }).catch(() => undefined),
+    );
+  }
+
+  // ── Questionnaires (PHQ-9 / GAD-7 / PSS / RSES) ─────────────────────────
+  // The standardised instruments are the most clinically useful thing MindCheck
+  // collects, and the ones the response model consumes. They live in
+  // mindcheck_history and were previously never mirrored to the clinic at all.
+  //
+  // CheckInFlow writes ONE history entry per questionnaire as its score screen
+  // appears (persistQuestionnaireResult), not one entry per check-in session —
+  // each entry has exactly one of phq9Score/gad7Score/pssScore/rsesScore set and
+  // the rest null. Grouping by timestamp merges same-session entries back into
+  // one document per visit instead of scattering four near-empty ones.
+  const history: any[] = getSensitiveValueSync('mindcheck_history', []);
+  const byVisit = new Map<string, any>();
+  for (const h of history) {
+    const when = h.date ?? h.timestamp ?? h.completedAt;
+    if (!when) continue;
+    // Entries from the same check-in land within seconds of each other; bucket
+    // by minute so they group without needing a shared session id.
+    const ts = typeof h.timestamp === 'number' ? h.timestamp : Date.parse(when);
+    const bucket = Number.isFinite(ts) ? Math.floor(ts / 60000) : String(when);
+    const key = String(bucket);
+    const visit = byVisit.get(key) ?? { date: when };
+    if (h.phq9Score != null) visit.phq9_total = h.phq9Score;
+    if (h.gad7Score != null) visit.gad7_total = h.gad7Score;
+    if (h.pssScore != null) visit.pss_total = h.pssScore;
+    if (h.rsesScore != null) visit.rses_total = h.rsesScore;
+    byVisit.set(key, visit);
+  }
+  for (const [key, visit] of byVisit) {
+    ops.push(
+      setDoc(pdoc(pid, 'mc_questionnaires', key), {
+        ...visit,
         _ts: serverTimestamp(),
       }, { merge: true }).catch(() => undefined),
     );

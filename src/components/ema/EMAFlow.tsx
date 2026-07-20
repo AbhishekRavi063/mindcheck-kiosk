@@ -8,6 +8,7 @@ import { saveDayLog, logUserActivity } from '../../utils/firebaseSync';
 import { logEMACompleted } from '../../utils/analytics';
 import { enableCloudSync, disableCloudSync, uploadAllLocalData } from '../../utils/cloudSync';
 import { getSensitiveValueSync, setSensitiveValue } from '../../utils/secureVault';
+import { syncToKioskDb } from '../../utils/kioskSync';
 
 interface EMAFlowProps {
   onComplete: (answers: any) => void;
@@ -57,9 +58,15 @@ export function EMAFlow({ onComplete, onSkip, isDarkMode }: EMAFlowProps) {
         timestamp: new Date().toISOString()
       });
 
-      setSensitiveValue('mindcheck_ema_data', existingData).catch(error => {
-        console.error('Error saving secure EMA data:', error);
-      });
+      // Sync to the clinic DB straight after the vault write. This flow returns
+      // to the section selector rather than calling onComplete, so App.tsx never
+      // learns a section finished — syncing anywhere else would miss EMA
+      // entirely and the clinician would see no check-ins.
+      setSensitiveValue('mindcheck_ema_data', existingData)
+        .then(() => syncToKioskDb())
+        .catch(error => {
+          console.error('Error saving secure EMA data or syncing:', error);
+        });
 
       // Firebase sync
       saveDayLog({ questions, time_of_day: selectedSection.id });
