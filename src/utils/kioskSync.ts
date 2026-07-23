@@ -16,6 +16,9 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { resolveParticipantId } from './patientIdentity';
 import { getSensitiveValueSync } from './secureVault';
+import {
+  phq9Questions, functionalImpairmentQuestion, pssQuestions, rsesQuestions, gad7Questions,
+} from '../data/checkInQuestions';
 
 function pdoc(pid: string, sub: string, id: string) {
   return doc(db, 'participants', pid, sub, id);
@@ -78,23 +81,61 @@ export async function syncToKioskDb(): Promise<void> {
   // CheckInFlow writes ONE history entry per questionnaire as its score screen
   // appears (persistQuestionnaireResult), not one entry per check-in session —
   // each entry has exactly one of phq9Score/gad7Score/pssScore/rsesScore set and
-  // the rest null. Grouping by timestamp merges same-session entries back into
-  // one document per visit instead of scattering four near-empty ones.
+  // the rest null, plus a matching *Answers array of raw option indexes.
+  // Grouping by timestamp merges same-session entries into one document per
+  // visit instead of scattering four near-empty ones.
+  //
+  // Answers are expanded to {question, answer} pairs with real text — a
+  // clinician reviewing "PHQ-9: 4" has no way to see which items drove that
+  // score without opening MindCheck itself.
+  const withText = (
+    questions: { text: string; options: string[] }[],
+    answers: number[] | null | undefined,
+  ) =>
+    (answers ?? []).map((a, i) => ({
+      question: questions[i]?.text ?? `Item ${i + 1}`,
+      answer: questions[i]?.options?.[a] ?? String(a),
+    }));
+
   const history: any[] = getSensitiveValueSync('mindcheck_history', []);
   const byVisit = new Map<string, any>();
   for (const h of history) {
     const when = h.date ?? h.timestamp ?? h.completedAt;
     if (!when) continue;
-    // Entries from the same check-in land within seconds of each other; bucket
-    // by minute so they group without needing a shared session id.
+    // A full check-in (4 questionnaires + games, self-paced) can take several
+    // minutes, so a 1-minute bucket split entries from the same visit into
+    // separate documents. 30 minutes comfortably covers one sitting while still
+    // separating a morning and an evening check-in on the same day.
     const ts = typeof h.timestamp === 'number' ? h.timestamp : Date.parse(when);
-    const bucket = Number.isFinite(ts) ? Math.floor(ts / 60000) : String(when);
+    const bucket = Number.isFinite(ts) ? Math.floor(ts / (30 * 60000)) : String(when);
     const key = String(bucket);
     const visit = byVisit.get(key) ?? { date: when };
-    if (h.phq9Score != null) visit.phq9_total = h.phq9Score;
-    if (h.gad7Score != null) visit.gad7_total = h.gad7Score;
-    if (h.pssScore != null) visit.pss_total = h.pssScore;
-    if (h.rsesScore != null) visit.rses_total = h.rsesScore;
+    if (h.phq9Score != null) {
+      visit.phq9_total = h.phq9Score;
+      // functionalImpairment is stored separately from phq9Answers, not
+      // appended to it — pairing it into the same array would mis-align every
+      // item from that point on.
+      visit.phq9_items = withText(phq9Questions, h.phq9Answers);
+      if (h.functionalImpairment != null) {
+        visit.phq9_items.push({
+          question: functionalImpairmentQuestion.text,
+          answer: functionalImpairmentQuestion.options[h.functionalImpairment]
+            ?? String(h.functionalImpairment),
+        });
+      }
+    }
+    if (h.gad7Score != null) {
+      visit.gad7_total = h.gad7Score;
+      visit.gad7_items = withText(gad7Questions, h.gad7Answers);
+    }
+    if (h.pssScore != null) {
+      visit.pss_total = h.pssScore;
+      visit.pss_items = withText(pssQuestions, h.pssAnswers);
+    }
+    if (h.rsesScore != null) {
+      visit.rses_total = h.rsesScore;
+      visit.rses_items = withText(rsesQuestions, h.rsesAnswers);
+    }
     byVisit.set(key, visit);
   }
   for (const [key, visit] of byVisit) {
